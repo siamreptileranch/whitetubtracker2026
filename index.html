@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRR — White Tub Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --fb-blue:#1877f2;--fb-blue-dk:#166fe5;--fb-blue-lt:#e7f3ff;
+  --fb-bg:#f0f2f5;--fb-surface:#fff;--fb-border:#dde1e7;
+  --fb-text:#050505;--fb-muted:#65676b;--fb-hover:#f2f2f2;
+  --green:#42b72a;--green-lt:#e6f4ea;
+  --red:#fa3e3e;--red-lt:#fdeaea;
+  --amber:#f7b928;--amber-lt:#fff3cd;
+  --orange:#ff6b00;--orange-lt:#fff0e6;
+  --gray:#8d9db6;--gray-lt:#f1f3f6;
+  --r:8px;--font:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fb-bg);color:var(--fb-text);font-family:var(--font);font-size:14px;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--fb-surface);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 2px 4px rgba(0,0,0,.1);position:sticky;top:0;z-index:300;gap:8px}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--fb-text);white-space:nowrap}
+.nav-logo-icon{background:var(--fb-blue);color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 14px;border-radius:6px;border:none;background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--fb-muted);font-family:var(--font);transition:background .1s;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-tab:hover{background:var(--fb-hover)}
+.nav-tab.active{color:var(--fb-blue);border-bottom-color:var(--fb-blue)}
+.nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.nav-clock{font-size:11px;color:var(--fb-muted);white-space:nowrap}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 52px)}
+
+/* SIDEBAR */
+.sidebar{background:var(--fb-surface);border-right:1px solid var(--fb-border);padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;position:sticky;top:52px;height:calc(100vh - 52px)}
+.sb-title{font-size:10px;font-weight:700;color:var(--fb-muted);letter-spacing:.07em;padding:4px 8px 6px;border-bottom:1px solid var(--fb-border);margin-bottom:4px}
+.sb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;border:none;background:transparent;width:100%;font-family:var(--font);font-size:12px;font-weight:500;color:var(--fb-text);text-align:left;transition:background .1s}
+.sb-item:hover{background:var(--fb-hover)}
+.sb-item.active{background:var(--fb-blue-lt);color:var(--fb-blue)}
+.sb-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sb-count{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--fb-bg)}
+.sb-count.red{background:var(--red-lt);color:var(--red)}
+.sb-count.orange{background:var(--orange-lt);color:var(--orange)}
+.sb-div{height:1px;background:var(--fb-border);margin:5px 0}
+.sb-legend{padding:8px;background:var(--fb-bg);border-radius:var(--r);margin-top:4px;font-size:11px}
+.sb-legend-title{font-weight:700;color:var(--fb-muted);margin-bottom:5px;letter-spacing:.04em;font-size:10px}
+.sb-leg-row{display:flex;align-items:center;gap:6px;padding:2px 0;color:var(--fb-text)}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+
+/* MAIN */
+.main{padding:12px;overflow-y:auto}
+
+/* SUMMARY */
+.summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-bottom:12px}
+.stat-card{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);padding:10px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.stat-val{font-size:20px;font-weight:700;line-height:1}
+.stat-label{font-size:10px;color:var(--fb-muted);margin-top:2px;font-weight:600;letter-spacing:.02em}
+.stat-my{font-size:9px;color:var(--fb-muted);margin-top:1px}
+
+/* TOOLBAR */
+.toolbar{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.tb-search{flex:1;min-width:120px;background:var(--fb-bg);border:1.5px solid var(--fb-border);border-radius:20px;padding:6px 12px;font-size:13px;font-family:var(--font);color:var(--fb-text);outline:none}
+.tb-search:focus{border-color:var(--fb-blue)}
+.filter-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--fb-border);background:var(--fb-bg);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--fb-muted);transition:all .1s;white-space:nowrap}
+.filter-btn:hover{border-color:var(--fb-blue);color:var(--fb-blue)}
+.filter-btn.active{border-color:var(--fb-blue);background:var(--fb-blue-lt);color:var(--fb-blue)}
+.fb-btn{background:var(--fb-blue);color:#fff;border:none;border-radius:var(--r);padding:7px 14px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.fb-btn:hover{background:var(--fb-blue-dk)}
+.fb-btn.green{background:var(--green)}.fb-btn.green:hover{background:#35a320}
+.fb-btn.sm{font-size:11px;padding:5px 10px}
+
+/* ROW SECTIONS */
+.row-section{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.row-header{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--fb-border);cursor:pointer;user-select:none;background:#fafbfc}
+.row-header:hover{background:var(--fb-hover)}
+.row-header-toggle{font-size:11px;color:var(--fb-muted);transition:transform .2s}
+.row-header-toggle.open{transform:rotate(90deg)}
+.row-id{font-weight:700;font-size:14px;min-width:42px}
+.row-my{font-size:11px;color:var(--fb-muted);font-weight:400}
+.row-stats{display:flex;gap:5px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.row-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.row-pill.ok{background:var(--green-lt);color:#1a5c0c}
+.row-pill.warning{background:var(--amber-lt);color:#856404}
+.row-pill.urgent{background:var(--orange-lt);color:#7a3200}
+.row-pill.critical{background:var(--red-lt);color:#7c0000}
+.row-pill.unchecked{background:var(--gray-lt);color:var(--gray)}
+.row-body{padding:10px 12px;display:none}
+.row-body.open{display:block}
+
+/* TUB GRID inside row */
+.tub-row-grid{display:flex;flex-wrap:wrap;gap:5px}
+
+/* TUB */
+.tub{width:52px;height:58px;border-radius:6px;border:2px solid var(--fb-border);background:var(--fb-surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s,border-color .15s,box-shadow .1s;position:relative;flex-shrink:0;user-select:none}
+.tub:hover{transform:scale(1.08);box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:2}
+.tub-num{font-size:11px;font-weight:700;color:var(--fb-text);line-height:1}
+.tub-icons{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;max-width:46px;margin-top:2px}
+.tub-ico{font-size:9px;line-height:1}
+.tub-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 4px 4px}
+.tub.ok{border-color:#42b72a;background:#f0fff4}.tub.ok .tub-bar{background:var(--green)}
+.tub.warning{border-color:var(--amber);background:#fffbf0}.tub.warning .tub-bar{background:var(--amber)}
+.tub.urgent{border-color:var(--orange);background:#fff5ed}.tub.urgent .tub-bar{background:var(--orange)}
+.tub.critical{border-color:var(--red);background:#fff0f0;animation:pr 1.5s infinite}.tub.critical .tub-bar{background:var(--red)}
+@keyframes pr{0%,100%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}50%{box-shadow:0 0 0 5px rgba(250,62,62,0)}}
+.tub-alert{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;z-index:3}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-start;justify-content:center;padding:60px 12px 20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--fb-surface);border-radius:12px;width:100%;max-width:500px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--fb-border)}
+.modal-title{font-size:16px;font-weight:700}
+.modal-title-my{font-size:11px;color:var(--fb-muted);font-weight:400;margin-top:2px}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--fb-bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--fb-muted);font-family:var(--font);flex-shrink:0}
+.modal-close:hover{background:var(--fb-border)}
+.modal-body{padding:14px 18px}
+.modal-footer{padding:10px 18px;border-top:1px solid var(--fb-border);display:flex;gap:8px;justify-content:flex-end}
+
+/* FORM */
+.field{margin-bottom:10px}
+.field-label{font-size:11px;font-weight:700;color:var(--fb-muted);letter-spacing:.04em;margin-bottom:4px;display:block}
+.field-label-my{font-size:10px;color:var(--fb-muted);font-weight:400;margin-left:4px}
+.field-input{width:100%;background:var(--fb-bg);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:8px 11px;font-size:13px;font-family:var(--font);color:var(--fb-text);outline:none;transition:border-color .15s}
+.field-input:focus{border-color:var(--fb-blue);background:#fff}
+.field-textarea{resize:vertical;min-height:55px}
+
+/* SEVERITY */
+.sev-row{display:flex;gap:5px;margin-bottom:12px}
+.sev-btn{flex:1;padding:7px 4px;border-radius:var(--r);border:2px solid var(--fb-border);background:var(--fb-bg);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);text-align:center;transition:all .1s}
+.sev-btn.sel-ok{border-color:var(--green);background:var(--green-lt);color:#1a5c0c}
+.sev-btn.sel-warning{border-color:var(--amber);background:var(--amber-lt);color:#856404}
+.sev-btn.sel-urgent{border-color:var(--orange);background:var(--orange-lt);color:#7a3200}
+.sev-btn.sel-critical{border-color:var(--red);background:var(--red-lt);color:#7c0000}
+
+/* ISSUES */
+.issue-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.issue-check{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:var(--r);border:1.5px solid var(--fb-border);cursor:pointer;transition:all .1s;user-select:none}
+.issue-check:hover{border-color:var(--fb-blue);background:var(--fb-blue-lt)}
+.issue-check.checked{border-color:var(--red);background:var(--red-lt)}
+.issue-check.checked .ic-label{color:var(--red)}
+.ic-icon{font-size:15px;flex-shrink:0}
+.ic-label{font-size:12px;font-weight:600;line-height:1.3}
+.ic-my{font-size:10px;color:var(--fb-muted);font-weight:400;line-height:1.2;margin-top:1px}
+
+/* HISTORY */
+.history-entry{border-left:3px solid var(--fb-border);padding:7px 10px;margin-bottom:6px;border-radius:0 var(--r) var(--r) 0;background:var(--fb-bg)}
+.history-entry.ok{border-left-color:var(--green)}
+.history-entry.warning{border-left-color:var(--amber)}
+.history-entry.urgent{border-left-color:var(--orange)}
+.history-entry.critical{border-left-color:var(--red)}
+.he-top{display:flex;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:4px}
+.he-date{font-size:11px;color:var(--fb-muted)}
+.he-sev{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+.he-issues{font-size:12px;color:var(--fb-text);margin-bottom:2px;font-weight:500}
+.he-note{font-size:11px;color:var(--fb-muted)}
+
+/* ALERTS PAGE */
+.alert-feed{display:flex;flex-direction:column;gap:8px}
+.af-card{background:var(--fb-surface);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.af-card.critical{border-color:var(--red);background:var(--red-lt)}
+.af-card.urgent{border-color:var(--orange);background:var(--orange-lt)}
+.af-card.warning{border-color:var(--amber);background:var(--amber-lt)}
+.af-icon{font-size:20px;flex-shrink:0}
+.af-body{flex:1;min-width:0}
+.af-tub{font-weight:700;font-size:14px}
+.af-tub-my{font-size:11px;color:var(--fb-muted);font-weight:400}
+.af-issues{font-size:12px;color:var(--fb-text);margin-top:3px}
+.af-meta{font-size:11px;color:var(--fb-muted);margin-top:3px}
+.af-resolve{background:var(--fb-surface);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;align-self:center}
+.af-resolve:hover{background:var(--green-lt);border-color:var(--green);color:#1a5c0c}
+
+/* LOG */
+.log-card{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);margin-bottom:7px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.log-card-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer}
+.log-card-header:hover{background:var(--fb-hover)}
+.lc-sev{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.lc-sev.ok{background:var(--green-lt);color:#1a5c0c}
+.lc-sev.warning{background:var(--amber-lt);color:#856404}
+.lc-sev.urgent{background:var(--orange-lt);color:#7a3200}
+.lc-sev.critical{background:var(--red-lt);color:#7c0000}
+.log-body{padding:8px 13px;font-size:12px;color:var(--fb-muted);border-top:1px solid var(--fb-border)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:36px 20px;color:var(--fb-muted)}
+.empty-state .es-icon{font-size:32px;margin-bottom:8px}
+.empty-state .es-text{font-size:13px}
+.empty-state .es-my{font-size:11px;margin-top:4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#050505;color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;transition:all .25s;z-index:999;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .tub{width:42px;height:50px}
+  .issue-grid{grid-template-columns:1fr}
+  .nav-clock{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">S</div>
+    <div>
+      <div>White Tub Tracker</div>
+      <div style="font-size:10px;color:var(--fb-muted);font-weight:400">အဖြူရောင်ပုံးများ စစ်ဆေးစနစ်</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('grid')">🗺 Tub Map</button>
+    <button class="nav-tab" onclick="showPage('alerts')">🚨 Alerts</button>
+    <button class="nav-tab" onclick="showPage('log')">📋 Log</button>
+  </div>
+  <div class="nav-right">
+    <span id="sync-pill" style="font-size:11px;padding:4px 11px;border-radius:20px;font-weight:600;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb">⬤ Loading…</span>
+    <span id="nav-alert-badge" style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none">0!</span>
+    <span class="nav-clock" id="clock"></span>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-title">FILTER BY STATUS</div>
+    <button class="sb-item active" onclick="setFilter('all')" id="sbf-all">
+      <span class="sb-dot" style="background:var(--fb-border)"></span>All tubs
+      <span class="sb-count" id="sb-all">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('critical')">
+      <span class="sb-dot" style="background:var(--red)"></span>Critical
+      <span class="sb-count red" id="sb-critical">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('urgent')">
+      <span class="sb-dot" style="background:var(--orange)"></span>Urgent
+      <span class="sb-count orange" id="sb-urgent">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('warning')">
+      <span class="sb-dot" style="background:var(--amber)"></span>Warning
+      <span class="sb-count" id="sb-warning">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('ok')">
+      <span class="sb-dot" style="background:var(--green)"></span>OK ကောင်းသည်
+      <span class="sb-count" id="sb-ok">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('unchecked')">
+      <span class="sb-dot" style="background:var(--gray)"></span>Unchecked မစစ်ရသေး
+      <span class="sb-count" id="sb-unchecked">0</span>
+    </button>
+    <div class="sb-div"></div>
+    <div class="sb-title">FILTER BY ISSUE</div>
+    <button class="sb-item" onclick="setFilter('death')">💀 Death သေဆုံး</button>
+    <button class="sb-item" onclick="setFilter('sick')">🤒 Sick ဖျားနာ</button>
+    <button class="sb-item" onclick="setFilter('no_water')">🚫 No water bowl</button>
+    <button class="sb-item" onclick="setFilter('not_eating')">🍽 Not eating</button>
+    <button class="sb-item" onclick="setFilter('no_rock')">🪨 No rock/medium</button>
+    <button class="sb-item" onclick="setFilter('check_now')">👁 Check immediately</button>
+    <div class="sb-div"></div>
+    <div class="sb-legend">
+      <div class="sb-legend-title">COLOUR KEY အရောင်အဓိပ္ပာယ်</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--green)"></span>✅ OK</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--amber)"></span>🟡 Warning</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--orange)"></span>🟠 Urgent</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--red)"></span>🔴 Critical ⚡</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--gray)"></span>⬜ Not checked</div>
+    </div>
+    <div class="sb-div"></div>
+    <button class="sb-item" onclick="syncAllToday()" style="color:#1877f2;font-weight:700">☁️ Sync all to Sheet</button>
+    <button class="sb-item" onclick="exportData()" style="color:var(--fb-blue)">⬇ Export CSV</button>
+    <button class="sb-item" onclick="resetDay()" style="color:var(--red)">↺ Reset daily</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- TUB MAP -->
+    <div id="page-grid">
+      <div class="summary-strip" id="summary-strip"></div>
+      <div class="toolbar">
+        <input class="tb-search" id="search-input" placeholder="🔍 Search tub e.g. 6A-3, 12B-15..." oninput="renderGrid()">
+        <button class="filter-btn active" id="fb-all"      onclick="setFilter('all')">All</button>
+        <button class="filter-btn"        id="fb-critical" onclick="setFilter('critical')">🔴</button>
+        <button class="filter-btn"        id="fb-urgent"   onclick="setFilter('urgent')">🟠</button>
+        <button class="filter-btn"        id="fb-warning"  onclick="setFilter('warning')">🟡</button>
+        <button class="filter-btn"        id="fb-ok"       onclick="setFilter('ok')">✅</button>
+        <button class="filter-btn"        id="fb-unchecked" onclick="setFilter('unchecked')">⬜</button>
+        <button class="fb-btn sm" onclick="expandAll()">Expand all</button>
+        <button class="fb-btn sm" style="background:var(--fb-bg);color:var(--fb-text);border:1px solid var(--fb-border)" onclick="collapseAll()">Collapse</button>
+        <button class="fb-btn sm" style="background:#1877f2;margin-left:4px" onclick="syncAllToday()">☁️ Sync all to Sheet</button>
+      </div>
+      <div id="tub-grid-container"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="page-alerts" style="display:none">
+      <div class="summary-strip" id="alert-summary"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--fb-muted);letter-spacing:.05em;margin-bottom:10px">ACTIVE ISSUES — ချက်ချင်းဆောင်ရွက်ရမည်</div>
+      <div class="alert-feed" id="alert-feed"></div>
+    </div>
+
+    <!-- LOG -->
+    <div id="page-log" style="display:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+        <input class="tb-search" id="log-search" placeholder="🔍 Search tub ID..." oninput="renderLog()" style="max-width:180px">
+        <select class="field-input" id="log-filter-sel" onchange="renderLog()" style="width:auto;padding:6px 10px;font-size:12px">
+          <option value="all">All entries</option>
+          <option value="critical">Critical only</option>
+          <option value="urgent">Urgent only</option>
+          <option value="warning">Warning only</option>
+          <option value="ok">OK checks</option>
+        </select>
+        <button class="fb-btn sm" onclick="exportData()" style="margin-left:auto">⬇ Export CSV</button>
+      </div>
+      <div id="log-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TUB MODAL -->
+<div class="modal-overlay" id="tub-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">Tub 6A-1</div>
+        <div class="modal-title-my" id="modal-title-my">အဖြူရောင်ပုံး စစ်ဆေးရန်</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="field">
+        <div class="field-label">SEVERITY <span class="field-label-my">အပြင်းအထန်အဆင့်</span></div>
+        <div class="sev-row">
+          <button class="sev-btn" id="sev-ok"       onclick="setSev('ok')">✅ OK ကောင်း</button>
+          <button class="sev-btn" id="sev-warning"   onclick="setSev('warning')">🟡 Warning</button>
+          <button class="sev-btn" id="sev-urgent"    onclick="setSev('urgent')">🟠 Urgent</button>
+          <button class="sev-btn" id="sev-critical"  onclick="setSev('critical')">🔴 Critical</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">ISSUES FOUND <span class="field-label-my">တွေ့ရသောပြဿနာများ</span></div>
+        <div class="issue-grid" id="issue-grid"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">NOTES <span class="field-label-my">မှတ်စု</span></label>
+        <textarea class="field-input field-textarea" id="modal-notes" placeholder="Describe findings... တွေ့ရှိချက်များ ဖော်ပြပါ..."></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">CHECKED BY <span class="field-label-my">စစ်ဆေးသူ</span></label>
+        <input class="field-input" id="modal-employee" placeholder="Your name / နာမည်">
+      </div>
+
+      <div class="field">
+        <div class="field-label">HISTORY <span class="field-label-my">မှတ်တမ်း</span></div>
+        <div id="modal-history" style="max-height:160px;overflow-y:auto"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="fb-btn" style="background:var(--fb-bg);color:var(--fb-text);border:1px solid var(--fb-border)" onclick="closeModal()">Cancel မလုပ်တော့</button>
+      <button class="fb-btn" style="background:#42b72a;color:#fff;border:none" onclick="saveEntry(false)">💾 Save locally</button>
+      <button class="fb-btn" style="background:#1877f2;color:#fff;border:none" onclick="saveEntry(true)">☁️ Save to Google Sheet</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast"<div class="toast" id="toast"></div>
+
+<script>
+// ── ROW DEFINITIONS ───────────────────────────────────────────────
+// Left column: rows 6A, 6B, 7A, 7B ... 22A, 22B, 23A (top)
+// Right column: rows 29A, 29B, 30A ... 45A, 45B, 46A (top)
+// Each row has 26 tubs numbered 1–26
+
+var LEFT_ROWS = [];
+LEFT_ROWS.push('23A');
+for(var n=22;n>=6;n--){ LEFT_ROWS.push(n+'B'); LEFT_ROWS.push(n+'A'); }
+
+var RIGHT_ROWS = [];
+RIGHT_ROWS.push('46A');
+for(var n=45;n>=29;n--){ RIGHT_ROWS.push(n+'B'); RIGHT_ROWS.push(n+'A'); }
+
+var ALL_ROWS = LEFT_ROWS.concat(RIGHT_ROWS);
+var TUBS_PER_ROW = 26;
+
+// Generate all tub IDs: rowId + '-' + tubNumber (1-26)
+var ALL_TUBS = [];
+ALL_ROWS.forEach(function(row){
+  for(var t=1;t<=TUBS_PER_ROW;t++){
+    ALL_TUBS.push(row+'-'+t);
+  }
+});
+
+// ── ISSUE DEFINITIONS (English + Burmese) ─────────────────────────
+var ISSUES = [
+  {id:'death',      icon:'💀', en:'Death',            my:'သေဆုံး'},
+  {id:'sick',       icon:'🤒', en:'Sick animal',       my:'ဖျားနာသော တိရစ္ဆာန်'},
+  {id:'no_water',   icon:'🚫', en:'No water bowl',     my:'ရေအိုးမရှိ'},
+  {id:'not_eating', icon:'🍽', en:'Not eating',        my:'အစာမစားသော'},
+  {id:'no_rock',    icon:'🪨', en:'No rock / medium',  my:'ကျောက်/မြေမရှိ'},
+  {id:'skinny',     icon:'⚖️', en:'Too skinny',        my:'ပိန်လှီသော'},
+  {id:'injury',     icon:'🩹', en:'Injury',            my:'ဒဏ်ရာ'},
+  {id:'fungus',     icon:'🍄', en:'Fungus / skin',     my:'မှို/အရေပြားပြဿနာ'},
+  {id:'dirty',      icon:'🧹', en:'Dirty / unclean',   my:'ညစ်ပတ်နေ'},
+  {id:'no_marking', icon:'🏷', en:'No marking',        my:'အမှတ်အသားမရှိ'},
+  {id:'escaped',    icon:'🚪', en:'Animal escaped',    my:'တိရစ္ဆာန်ထွက်ပြေး'},
+  {id:'check_now',  icon:'👁', en:'Check immediately', my:'ချက်ချင်းစစ်ဆေးပါ'},
+];
+
+// Burmese row translations
+function rowBurmese(rowId){
+  var num = parseInt(rowId);
+  return 'အတန်း ' + num + ' (' + rowId + ')';
+}
+
+function sevBurmese(s){
+  return {ok:'ကောင်းသည်',warning:'သတိပြုရန်',urgent:'အရေးပေါ်',critical:'အန္တရာယ်ရှိ',unchecked:'မစစ်ရသေး'}[s]||'မစစ်ရသေး';
+}
+
+// ── DATA ──────────────────────────────────────────────────────────
+function loadData(){
+  try{var d=localStorage.getItem('srr_wt3');return d?JSON.parse(d):{tubs:{},log:[]};}catch(e){return{tubs:{},log:[]};}
+}
+function saveData(){ localStorage.setItem('srr_wt3',JSON.stringify(DATA)); }
+var DATA = loadData();
+
+// ── STATE ─────────────────────────────────────────────────────────
+var currentFilter='all';
+var currentTubId=null;
+var currentSev='';
+var currentIssues=[];
+var rowOpenState={};
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function pad(n){return String(n).padStart(2,'0');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nowStr(){ var d=new Date();return d.toISOString().slice(0,10)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function getTubState(id){
+  var t=DATA.tubs[id];
+  if(!t||t.lastDate!==todayStr()) return 'unchecked';
+  return t.severity||'unchecked';
+}
+function getTubIssues(id){
+  var t=DATA.tubs[id];
+  if(!t||t.lastDate!==todayStr()) return [];
+  return t.issues||[];
+}
+function sevColor(s){
+  return {ok:'#42b72a',warning:'#f7b928',urgent:'#ff6b00',critical:'#fa3e3e',unchecked:'#8d9db6'}[s]||'#8d9db6';
+}
+function sevLabel(s){
+  return {ok:'✅ OK',warning:'🟡 Warning',urgent:'🟠 Urgent',critical:'🔴 Critical',unchecked:'⬜ Unchecked'}[s]||'⬜ Unchecked';
+}
+function issueObj(id){ return ISSUES.find(function(x){return x.id===id;}); }
+function issueLabel(id){ var i=issueObj(id); return i?i.icon+' '+i.en:id; }
+
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2200);
+}
+
+// Clock
+function tick(){
+  var n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' '+pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+}
+setInterval(tick,1000); tick();
+
+// ── FILTER ────────────────────────────────────────────────────────
+function setFilter(f){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.sb-item').forEach(function(el){el.classList.remove('active');});
+  var fb=document.getElementById('fb-'+f);
+  if(fb) fb.classList.add('active');
+  else document.getElementById('fb-all').classList.add('active');
+  renderGrid();
+}
+
+function tubMatchesFilter(id){
+  var s=getTubState(id);
+  var issues=getTubIssues(id);
+  if(currentFilter==='all') return true;
+  if(['ok','warning','urgent','critical','unchecked'].indexOf(currentFilter)>-1) return s===currentFilter;
+  return issues.indexOf(currentFilter)>-1;
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────
+function updateSummary(){
+  var counts={ok:0,warning:0,urgent:0,critical:0,unchecked:0};
+  ALL_TUBS.forEach(function(id){var s=getTubState(id);counts[s]=(counts[s]||0)+1;});
+  var total=ALL_TUBS.length;
+  var checked=total-counts.unchecked;
+
+  document.getElementById('summary-strip').innerHTML=
+    sc('Total / စုစုပေါင်း',total,'#1877f2','')+
+    sc('Checked / စစ်ပြီး',checked,'#42b72a','')+
+    sc('🔴 Critical',counts.critical,'#fa3e3e','')+
+    sc('🟠 Urgent',counts.urgent,'#ff6b00','')+
+    sc('🟡 Warning',counts.warning,'#f7b928','')+
+    sc('⬜ Unchecked မစစ်ရသေး',counts.unchecked,'#8d9db6','');
+
+  document.getElementById('sb-all').textContent=total;
+  document.getElementById('sb-critical').textContent=counts.critical;
+  document.getElementById('sb-urgent').textContent=counts.urgent;
+  document.getElementById('sb-warning').textContent=counts.warning;
+  document.getElementById('sb-ok').textContent=counts.ok;
+  document.getElementById('sb-unchecked').textContent=counts.unchecked;
+
+  var alerts=counts.critical+counts.urgent;
+  var badge=document.getElementById('nav-alert-badge');
+  if(alerts>0){badge.style.display='';badge.textContent=alerts+'!';}
+  else badge.style.display='none';
+}
+
+function sc(label,val,color){
+  var parts=label.split('/');
+  var en=parts[0].trim(), my=parts[1]?parts[1].trim():'';
+  return '<div class="stat-card"><div class="stat-val" style="color:'+color+'">'+val+'</div><div class="stat-label">'+esc(en)+'</div>'+(my?'<div class="stat-my">'+esc(my)+'</div>':'')+'</div>';
+}
+
+// ── ROW STATS ─────────────────────────────────────────────────────
+function getRowStats(rowId){
+  var counts={ok:0,warning:0,urgent:0,critical:0,unchecked:0};
+  for(var t=1;t<=TUBS_PER_ROW;t++){
+    var s=getTubState(rowId+'-'+t);
+    counts[s]=(counts[s]||0)+1;
+  }
+  return counts;
+}
+
+// ── RENDER GRID ───────────────────────────────────────────────────
+function renderGrid(){
+  updateSummary();
+  var search=document.getElementById('search-input').value.trim().toLowerCase();
+  var html='';
+
+  function renderColumn(rows, colTitle){
+    var colHtml='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;color:var(--fb-muted);letter-spacing:.06em;margin-bottom:8px;padding:0 4px">'+colTitle+'</div>';
+    rows.forEach(function(rowId){
+      var stats=getRowStats(rowId);
+      var hasIssues=stats.critical>0||stats.urgent>0||stats.warning>0;
+      var isOpen = rowOpenState[rowId]!==false; // default open
+
+      // Pills
+      var pills='';
+      if(stats.critical>0) pills+='<span class="row-pill critical">'+stats.critical+' critical</span>';
+      if(stats.urgent>0)   pills+='<span class="row-pill urgent">'+stats.urgent+' urgent</span>';
+      if(stats.warning>0)  pills+='<span class="row-pill warning">'+stats.warning+' warning</span>';
+      if(stats.ok>0)       pills+='<span class="row-pill ok">'+stats.ok+' ok</span>';
+      if(stats.unchecked>0)pills+='<span class="row-pill unchecked">'+stats.unchecked+' left</span>';
+
+      colHtml+='<div class="row-section">';
+      colHtml+='<div class="row-header" onclick="toggleRow(\''+rowId+'\')">';
+      colHtml+='<span class="row-header-toggle'+(isOpen?' open':'')+'\" id="arrow-'+rowId+'">▶</span>';
+      colHtml+='<span class="row-id">'+rowId+'</span>';
+      colHtml+='<span class="row-my" style="font-size:10px;color:var(--fb-muted)">အတန်း &nbsp; '+TUBS_PER_ROW+' ပုံး</span>';
+      colHtml+='<div class="row-stats">'+pills+'</div>';
+      colHtml+='</div>';
+
+      // Tub grid
+      colHtml+='<div class="row-body'+(isOpen?' open':'')+'\" id="rowbody-'+rowId+'">';
+      colHtml+='<div class="tub-row-grid">';
+      for(var t=1;t<=TUBS_PER_ROW;t++){
+        var tubId=rowId+'-'+t;
+        var state=getTubState(tubId);
+        var issues=getTubIssues(tubId);
+
+        // Search filter
+        var matchSearch=!search||tubId.toLowerCase().includes(search)||rowId.toLowerCase().includes(search);
+        var matchFilter=tubMatchesFilter(tubId);
+        if(!matchSearch||!matchFilter){
+          colHtml+='<div class="tub" style="opacity:.1;pointer-events:none;border-style:dashed"><div class="tub-num">'+t+'</div></div>';
+          continue;
+        }
+
+        var ihtml='';
+        issues.slice(0,3).forEach(function(iss){
+          var def=issueObj(iss);
+          if(def) ihtml+='<span class="tub-ico" title="'+esc(def.en)+' — '+esc(def.my)+'">'+def.icon+'</span>';
+        });
+        if(issues.length>3) ihtml+='<span class="tub-ico">+</span>';
+
+        var alertBadge=(state==='critical'||state==='urgent')?'<div class="tub-alert">!</div>':'';
+
+        colHtml+='<div class="tub '+state+'" onclick="openTubModal(\''+tubId+'\')" title="'+esc(tubId)+'">';
+        colHtml+=alertBadge;
+        colHtml+='<div class="tub-num">'+t+'</div>';
+        colHtml+='<div class="tub-icons">'+ihtml+'</div>';
+        colHtml+='<div class="tub-bar"></div>';
+        colHtml+='</div>';
+      }
+      colHtml+='</div></div></div>';
+    });
+    colHtml+='</div>';
+    return colHtml;
+  }
+
+  html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  html+=renderColumn(LEFT_ROWS, 'LEFT — အဆင့် 6–23');
+  html+=renderColumn(RIGHT_ROWS,'RIGHT — အဆင့် 29–46');
+  html+='</div>';
+
+  document.getElementById('tub-grid-container').innerHTML=html;
+}
+
+function toggleRow(rowId){
+  rowOpenState[rowId] = rowOpenState[rowId]===false ? true : false;
+  var body=document.getElementById('rowbody-'+rowId);
+  var arrow=document.getElementById('arrow-'+rowId);
+  if(body) body.classList.toggle('open', rowOpenState[rowId]!==false);
+  if(arrow) arrow.classList.toggle('open', rowOpenState[rowId]!==false);
+}
+
+function expandAll(){
+  ALL_ROWS.forEach(function(r){ rowOpenState[r]=true; });
+  renderGrid();
+}
+function collapseAll(){
+  ALL_ROWS.forEach(function(r){ rowOpenState[r]=false; });
+  renderGrid();
+}
+
+// ── TUB MODAL ─────────────────────────────────────────────────────
+function openTubModal(id){
+  currentTubId=id;
+  currentSev='';
+  currentIssues=[];
+  var t=DATA.tubs[id];
+  if(t&&t.lastDate===todayStr()){
+    currentSev=t.severity||'';
+    currentIssues=(t.issues||[]).slice();
+  }
+  var parts=id.split('-');
+  var rowId=parts[0], num=parts[1];
+  document.getElementById('modal-title').textContent='Tub '+esc(id)+' (Row '+esc(rowId)+', #'+esc(num)+')';
+  document.getElementById('modal-title-my').textContent='အတန်း '+esc(rowId)+' — ပုံးနံပါတ် '+esc(num);
+  document.getElementById('modal-notes').value=(t&&t.lastDate===todayStr()?t.notes:'')||'';
+  document.getElementById('modal-employee').value=localStorage.getItem('srr_last_emp')||'';
+  renderSevBtns();
+  renderIssueGrid();
+  renderHistory(id);
+  document.getElementById('tub-modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('tub-modal').classList.remove('open'); }
+
+function setSev(s){ currentSev=s; renderSevBtns(); }
+function renderSevBtns(){
+  ['ok','warning','urgent','critical'].forEach(function(s){
+    document.getElementById('sev-'+s).className='sev-btn'+(currentSev===s?' sel-'+s:'');
+  });
+}
+
+function renderIssueGrid(){
+  var html='';
+  ISSUES.forEach(function(iss){
+    var checked=currentIssues.indexOf(iss.id)>-1;
+    html+='<div class="issue-check'+(checked?' checked':'')+'" onclick="toggleIssue(\''+iss.id+'\')">';
+    html+='<span class="ic-icon">'+iss.icon+'</span>';
+    html+='<div><div class="ic-label">'+esc(iss.en)+'</div><div class="ic-my">'+esc(iss.my)+'</div></div>';
+    html+='</div>';
+  });
+  document.getElementById('issue-grid').innerHTML=html;
+}
+
+function toggleIssue(id){
+  var idx=currentIssues.indexOf(id);
+  if(idx>-1) currentIssues.splice(idx,1); else currentIssues.push(id);
+  renderIssueGrid();
+}
+
+function renderHistory(id){
+  var log=(DATA.log||[]).filter(function(e){return e.tub===id;}).slice().reverse().slice(0,8);
+  if(!log.length){
+    document.getElementById('modal-history').innerHTML='<div style="color:var(--fb-muted);font-size:12px">မှတ်တမ်းမရှိသေးပါ — No history yet.</div>';
+    return;
+  }
+  var html='';
+  log.forEach(function(e){
+    html+='<div class="history-entry '+e.severity+'">';
+    html+='<div class="he-top"><span class="he-date">'+esc(e.date)+' — '+esc(e.employee||'Unknown')+'</span>';
+    html+='<span class="he-sev" style="background:'+sevColor(e.severity)+'22;color:'+sevColor(e.severity)+'">'+sevLabel(e.severity)+'</span></div>';
+    if(e.issues&&e.issues.length) html+='<div class="he-issues">'+e.issues.map(issueLabel).join(' · ')+'</div>';
+    if(e.notes) html+='<div class="he-note">'+esc(e.notes)+'</div>';
+    html+='</div>';
+  });
+  document.getElementById('modal-history').innerHTML=html;
+}
+
+function saveEntry(syncToSheet) {
+  if (!currentTubId) return;
+  var notes = document.getElementById('modal-notes').value.trim();
+  var emp   = document.getElementById('modal-employee').value.trim();
+  if (emp) localStorage.setItem('srr_last_emp', emp);
+  var sev   = currentSev || 'ok';
+  var date  = nowStr();
+  DATA.tubs[currentTubId] = { severity:sev, issues:currentIssues.slice(), notes:notes, employee:emp, lastDate:todayStr() };
+  if (!DATA.log) DATA.log = [];
+  DATA.log.push({ tub:currentTubId, severity:sev, issues:currentIssues.slice(), notes:notes, employee:emp, date:date });
+  saveData();
+  closeModal();
+  renderGrid();
+  if (syncToSheet) {
+    pushToSheet(currentTubId, sev, currentIssues.slice(), notes, emp, date);
+  } else {
+    showToast('💾 Saved locally — ' + currentTubId);
+  }
+}
+
+// ── ALERTS PAGE ───────────────────────────────────────────────────
+function renderAlerts(){
+  var items=[];
+  ALL_TUBS.forEach(function(id){
+    var s=getTubState(id);
+    if(s==='critical'||s==='urgent'||s==='warning'){
+      items.push({id:id,sev:s,issues:getTubIssues(id),t:DATA.tubs[id]});
+    }
+  });
+  items.sort(function(a,b){ return ({critical:0,urgent:1,warning:2}[a.sev]||3)-({critical:0,urgent:1,warning:2}[b.sev]||3); });
+
+  var counts={critical:0,urgent:0,warning:0};
+  items.forEach(function(x){counts[x.sev]=(counts[x.sev]||0)+1;});
+  document.getElementById('alert-summary').innerHTML=
+    sc('🔴 Critical',counts.critical,'#fa3e3e','')+
+    sc('🟠 Urgent',counts.urgent,'#ff6b00','')+
+    sc('🟡 Warning',counts.warning,'#f7b928','')+
+    sc('Total alerts / စုစုပေါင်း',items.length,'#1877f2','');
+
+  if(!items.length){
+    document.getElementById('alert-feed').innerHTML='<div class="empty-state"><div class="es-icon">✅</div><div class="es-text">No active alerts — all checked tubs are OK!</div><div class="es-my">စစ်ဆေးပြီးသော ပုံးအားလုံး ကောင်းမွန်သည်</div></div>';
+    return;
+  }
+  var html='';
+  var icons={critical:'🚨',urgent:'⚠️',warning:'🔔'};
+  items.forEach(function(x){
+    var parts=x.id.split('-');
+    html+='<div class="af-card '+x.sev+'">';
+    html+='<div class="af-icon">'+icons[x.sev]+'</div>';
+    html+='<div class="af-body">';
+    html+='<div class="af-tub">'+esc(x.id)+' <span class="af-tub-my">— အတန်း '+esc(parts[0])+' ပုံး #'+esc(parts[1])+'</span></div>';
+    if(x.issues&&x.issues.length) html+='<div class="af-issues">'+x.issues.map(issueLabel).join(' · ')+'</div>';
+    if(x.t&&x.t.notes) html+='<div class="af-meta">'+esc(x.t.notes)+'</div>';
+    if(x.t&&x.t.employee) html+='<div class="af-meta">By: '+esc(x.t.employee)+'</div>';
+    html+='</div>';
+    html+='<button class="af-resolve" onclick="quickResolve(\''+x.id+'\')">✅ Resolve</button>';
+    html+='</div>';
+  });
+  document.getElementById('alert-feed').innerHTML=html;
+}
+
+function quickResolve(id){
+  DATA.tubs[id]={severity:'ok',issues:[],notes:'Resolved ဖြေရှင်းပြီး',employee:localStorage.getItem('srr_last_emp')||'',lastDate:todayStr()};
+  DATA.log.push({tub:id,severity:'ok',issues:[],notes:'Resolved ဖြေရှင်းပြီး',employee:localStorage.getItem('srr_last_emp')||'',date:nowStr()});
+  saveData();
+  pushToSheet(id,'ok',[],'Resolved ဖြေရှင်းပြီး',localStorage.getItem('srr_last_emp')||'',nowStr());
+  renderAlerts(); renderGrid();
+  showToast('✅ '+id+' resolved & synced');
+}
+
+// ── LOG PAGE ──────────────────────────────────────────────────────
+function renderLog(){
+  var search=(document.getElementById('log-search').value||'').trim().toLowerCase();
+  var filter=document.getElementById('log-filter-sel').value;
+  var log=(DATA.log||[]).slice().reverse();
+  if(search) log=log.filter(function(e){return e.tub&&e.tub.toLowerCase().includes(search);});
+  if(filter!=='all') log=log.filter(function(e){return e.severity===filter;});
+  if(!log.length){
+    document.getElementById('log-list').innerHTML='<div class="empty-state"><div class="es-icon">📋</div><div class="es-text">No log entries yet.</div><div class="es-my">မှတ်တမ်းမရှိသေးပါ</div></div>';
+    return;
+  }
+  var html='';
+  log.slice(0,300).forEach(function(e){
+    var parts=(e.tub||'').split('-');
+    html+='<div class="log-card">';
+    html+='<div class="log-card-header" onclick="openTubModal(\''+esc(e.tub)+'\')">';
+    html+='<div><span style="font-weight:700">'+esc(e.tub)+'</span> <span style="font-size:11px;color:var(--fb-muted);margin-left:6px">'+esc(e.date)+'</span></div>';
+    html+='<span class="lc-sev '+e.severity+'">'+sevLabel(e.severity)+' '+sevBurmese(e.severity)+'</span>';
+    html+='</div>';
+    if((e.issues&&e.issues.length)||e.notes||e.employee){
+      html+='<div class="log-body">';
+      if(e.issues&&e.issues.length) html+='<div style="margin-bottom:3px">'+e.issues.map(issueLabel).join(' · ')+'</div>';
+      if(e.notes) html+='<div style="color:var(--fb-text)">'+esc(e.notes)+'</div>';
+      if(e.employee) html+='<div style="font-size:10px;margin-top:3px">By: '+esc(e.employee)+'</div>';
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('log-list').innerHTML=html;
+}
+
+// ── PAGES ─────────────────────────────────────────────────────────
+function showPage(p){
+  ['grid','alerts','log'].forEach(function(pg){
+    document.getElementById('page-'+pg).style.display=pg===p?'block':'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach(function(el,i){
+    el.classList.toggle('active',['grid','alerts','log'][i]===p);
+  });
+  if(p==='alerts') renderAlerts();
+  if(p==='log') renderLog();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportData(){
+  var rows=[['Date','Tub','Row','Tub#','Severity','Issues','Notes','Employee']];
+  (DATA.log||[]).forEach(function(e){
+    var parts=(e.tub||'').split('-');
+    rows.push([e.date,e.tub,parts[0]||'',parts[1]||'',e.severity,(e.issues||[]).join('; '),e.notes||'',e.employee||'']);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='SRR_WhiteTubs_'+todayStr()+'.csv';
+  a.click();
+  showToast('✅ CSV exported!');
+}
+
+function resetDay(){
+  if(!confirm('Reset all today\'s checks?\nယနေ့ စစ်ဆေးမှုများအားလုံး ပြန်လည်မူလအခြေသို့ ပြောင်းမည်လား?\n(History is kept — မှတ်တမ်းများသိမ်းထားမည်)')) return;
+  ALL_TUBS.forEach(function(id){
+    if(DATA.tubs[id]&&DATA.tubs[id].lastDate===todayStr()) DATA.tubs[id].lastDate='';
+  });
+  saveData(); renderGrid();
+  showToast('Daily checks reset — ပြန်လည်သတ်မှတ်ပြီး');
+}
+
+// Close on backdrop click
+document.getElementById('tub-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE SHEETS SYNC
+// ═══════════════════════════════════════════════════════════════
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbzrWWRRAEUxriafpDk8Kc308pzxB31p_lJHwXqbSDaMm06l_4bp8o4-Fe0AFi-ewfGzvA/exec';
+var syncQueue = [];
+var isSyncing = false;
+
+function setSyncPill(label, bg, color) {
+  var el = document.getElementById('sync-pill');
+  if (!el) return;
+  el.textContent = label;
+  el.style.background = bg;
+  el.style.color = color;
+  el.style.border = '1px solid ' + color + '44';
+}
+
+function pillState(state) {
+  if (state === 'ok')      setSyncPill('⬤ Synced', '#e6f4ea', '#1a5c0c');
+  if (state === 'saving')  setSyncPill('⬤ Saving…', '#dbeafe', '#1e40af');
+  if (state === 'offline') setSyncPill('⬤ Offline', '#f3f4f6', '#6b7280');
+  if (state === 'error')   setSyncPill('⬤ Error', '#fdeaea', '#7c0000');
+  if (state === 'ready')   setSyncPill('⬤ Ready', '#e6f4ea', '#1a5c0c');
+}
+
+// Single tub push — called when employee clicks "Save to Sheet"
+function pushToSheet(tubId, severity, issues, notes, employee, date) {
+  if (!SHEET_URL) { showToast('⚠️ No Sheet URL configured'); return; }
+  pillState('saving');
+  var payload = JSON.stringify({
+    action: 'log',
+    tubId: tubId, date: date,
+    severity: severity,
+    issues: issues,
+    notes: notes,
+    employee: employee
+  });
+  fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', body: payload })
+    .then(function() {
+      pillState('ok');
+      showToast('✅ Tub ' + tubId + ' saved to Google Sheet!');
+    })
+    .catch(function() {
+      pillState('offline');
+      showToast('⚠️ Offline — saved locally only');
+    });
+}
+
+// Bulk push — all today's checked tubs at once
+function syncAllToday() {
+  if (!SHEET_URL) { showToast('⚠️ No Sheet URL configured'); return; }
+  var entries = [];
+  ALL_TUBS.forEach(function(id) {
+    var t = DATA.tubs[id];
+    if (t && t.lastDate === todayStr()) {
+      entries.push({
+        tubId: id, date: t.lastDate,
+        severity: t.severity || 'ok',
+        issues: t.issues || [],
+        notes: t.notes || '',
+        employee: t.employee || ''
+      });
+    }
+  });
+  if (!entries.length) {
+    showToast('ℹ️ No tubs checked today to sync');
+    return;
+  }
+  pillState('saving');
+  showToast('☁️ Syncing ' + entries.length + ' tubs…');
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'bulk', entries: entries })
+  })
+  .then(function() {
+    pillState('ok');
+    showToast('✅ Synced ' + entries.length + ' tubs to Google Sheet!');
+  })
+  .catch(function() {
+    pillState('offline');
+    showToast('⚠️ Offline — data saved locally');
+  });
+}
+
+// Auto-sync on page load
+setTimeout(function() {
+  if (SHEET_URL) {
+    pillState('ready');
+    syncAllToday();
+  } else {
+    pillState('offline');
+  }
+}, 1500);
+
+// ── INIT ──────────────────────────────────────────────────────────
+renderGrid();
+</script>
+</body>
+</html>
