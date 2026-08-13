@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRR — White Tub Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --fb-blue:#1877f2;--fb-blue-dk:#166fe5;--fb-blue-lt:#e7f3ff;
+  --fb-bg:#f0f2f5;--fb-surface:#fff;--fb-border:#dde1e7;
+  --fb-text:#050505;--fb-muted:#65676b;--fb-hover:#f2f2f2;
+  --green:#42b72a;--green-lt:#e6f4ea;
+  --red:#fa3e3e;--red-lt:#fdeaea;
+  --amber:#f7b928;--amber-lt:#fff3cd;
+  --orange:#ff6b00;--orange-lt:#fff0e6;
+  --gray:#8d9db6;--gray-lt:#f1f3f6;
+  --r:8px;--font:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fb-bg);color:var(--fb-text);font-family:var(--font);font-size:14px;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--fb-surface);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 2px 4px rgba(0,0,0,.1);position:sticky;top:0;z-index:300;gap:8px}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--fb-text);white-space:nowrap}
+.nav-logo-icon{background:var(--fb-blue);color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 14px;border-radius:6px;border:none;background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--fb-muted);font-family:var(--font);transition:background .1s;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-tab:hover{background:var(--fb-hover)}
+.nav-tab.active{color:var(--fb-blue);border-bottom-color:var(--fb-blue)}
+.nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.nav-clock{font-size:11px;color:var(--fb-muted);white-space:nowrap}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 52px)}
+
+/* SIDEBAR */
+.sidebar{background:var(--fb-surface);border-right:1px solid var(--fb-border);padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;position:sticky;top:52px;height:calc(100vh - 52px)}
+.sb-title{font-size:10px;font-weight:700;color:var(--fb-muted);letter-spacing:.07em;padding:4px 8px 6px;border-bottom:1px solid var(--fb-border);margin-bottom:4px}
+.sb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;border:none;background:transparent;width:100%;font-family:var(--font);font-size:12px;font-weight:500;color:var(--fb-text);text-align:left;transition:background .1s}
+.sb-item:hover{background:var(--fb-hover)}
+.sb-item.active{background:var(--fb-blue-lt);color:var(--fb-blue)}
+.sb-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sb-count{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--fb-bg)}
+.sb-count.red{background:var(--red-lt);color:var(--red)}
+.sb-count.orange{background:var(--orange-lt);color:var(--orange)}
+.sb-div{height:1px;background:var(--fb-border);margin:5px 0}
+.sb-legend{padding:8px;background:var(--fb-bg);border-radius:var(--r);margin-top:4px;font-size:11px}
+.sb-legend-title{font-weight:700;color:var(--fb-muted);margin-bottom:5px;letter-spacing:.04em;font-size:10px}
+.sb-leg-row{display:flex;align-items:center;gap:6px;padding:2px 0;color:var(--fb-text)}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+
+/* MAIN */
+.main{padding:12px;overflow-y:auto}
+
+/* SUMMARY */
+.summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-bottom:12px}
+.stat-card{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);padding:10px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.stat-val{font-size:20px;font-weight:700;line-height:1}
+.stat-label{font-size:10px;color:var(--fb-muted);margin-top:2px;font-weight:600;letter-spacing:.02em}
+.stat-my{font-size:9px;color:var(--fb-muted);margin-top:1px}
+
+/* TOOLBAR */
+.toolbar{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.tb-search{flex:1;min-width:120px;background:var(--fb-bg);border:1.5px solid var(--fb-border);border-radius:20px;padding:6px 12px;font-size:13px;font-family:var(--font);color:var(--fb-text);outline:none}
+.tb-search:focus{border-color:var(--fb-blue)}
+.filter-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--fb-border);background:var(--fb-bg);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--fb-muted);transition:all .1s;white-space:nowrap}
+.filter-btn:hover{border-color:var(--fb-blue);color:var(--fb-blue)}
+.filter-btn.active{border-color:var(--fb-blue);background:var(--fb-blue-lt);color:var(--fb-blue)}
+.fb-btn{background:var(--fb-blue);color:#fff;border:none;border-radius:var(--r);padding:7px 14px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.fb-btn:hover{background:var(--fb-blue-dk)}
+.fb-btn.green{background:var(--green)}.fb-btn.green:hover{background:#35a320}
+.fb-btn.sm{font-size:11px;padding:5px 10px}
+
+/* ROW SECTIONS */
+.row-section{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.row-header{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--fb-border);cursor:pointer;user-select:none;background:#fafbfc}
+.row-header:hover{background:var(--fb-hover)}
+.row-header-toggle{font-size:11px;color:var(--fb-muted);transition:transform .2s}
+.row-header-toggle.open{transform:rotate(90deg)}
+.row-id{font-weight:700;font-size:14px;min-width:42px}
+.row-my{font-size:11px;color:var(--fb-muted);font-weight:400}
+.row-stats{display:flex;gap:5px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.row-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.row-pill.ok{background:var(--green-lt);color:#1a5c0c}
+.row-pill.warning{background:var(--amber-lt);color:#856404}
+.row-pill.urgent{background:var(--orange-lt);color:#7a3200}
+.row-pill.critical{background:var(--red-lt);color:#7c0000}
+.row-pill.unchecked{background:var(--gray-lt);color:var(--gray)}
+.row-body{padding:10px 12px;display:none}
+.row-body.open{display:block}
+
+/* TUB GRID inside row */
+.tub-row-grid{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0}
+
+/* TUB */
+.tub{width:100px;min-height:90px;border-radius:8px;border:2px solid var(--fb-border);background:var(--fb-surface);display:flex;flex-direction:column;cursor:pointer;transition:transform .1s,border-color .15s,box-shadow .1s;position:relative;flex-shrink:0;user-select:none;padding:6px 6px 8px;gap:2px}
+.tub:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:2}
+.tub-num{font-size:11px;font-weight:700;color:var(--fb-muted);line-height:1}
+.tub-icons{display:flex;flex-wrap:wrap;gap:1px;margin-top:1px}
+.tub-ico{font-size:9px;line-height:1}
+.tub-bar{position:absolute;bottom:0;left:0;right:0;height:4px;border-radius:0 0 6px 6px}
+/* Animal counts */
+.tub-counts{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap}
+.tub-count-chip{font-size:9px;font-weight:700;padding:1px 4px;border-radius:4px;white-space:nowrap;line-height:1.4}
+.tub-count-m{background:#dbeafe;color:#1e40af}
+.tub-count-f{background:#fce7f3;color:#9d174d}
+.tub-count-total{background:#f0f2f5;color:var(--fb-muted)}
+/* Morph label */
+.tub-morph{font-size:8px;color:var(--fb-blue);font-weight:700;line-height:1.2;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.tub.ok{border-color:#42b72a;background:#f0fff4}.tub.ok .tub-bar{background:var(--green)}
+.tub.warning{border-color:var(--amber);background:#fffbf0}.tub.warning .tub-bar{background:var(--amber)}
+.tub.urgent{border-color:var(--orange);background:#fff5ed}.tub.urgent .tub-bar{background:var(--orange)}
+.tub.critical{border-color:var(--red);background:#fff0f0;animation:pr 1.5s infinite}.tub.critical .tub-bar{background:var(--red)}
+@keyframes pr{0%,100%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}50%{box-shadow:0 0 0 5px rgba(250,62,62,0)}}
+
+/* ANIMAL INVENTORY */
+.inv-section{margin-bottom:12px}
+.inv-section-title{font-size:10px;font-weight:700;color:var(--fb-muted);letter-spacing:.07em;padding:5px 8px;background:var(--fb-bg);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--fb-blue)}
+.morph-row{display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid #f5f5f5;font-size:12px}
+.morph-row:last-child{border-bottom:none}
+.morph-name{flex:1;font-weight:500;color:var(--fb-text)}
+.morph-inputs{display:flex;align-items:center;gap:4px}
+.morph-input{width:44px;text-align:center;padding:4px 4px;border:1.5px solid var(--fb-border);border-radius:5px;font-size:12px;font-family:var(--font);background:var(--fb-bg);color:var(--fb-text)}
+.morph-input:focus{outline:none;border-color:var(--fb-blue);background:#fff}
+.morph-m{color:#1877f2;font-size:10px;font-weight:700;min-width:14px;text-align:center}
+.morph-f{color:#d63384;font-size:10px;font-weight:700;min-width:14px;text-align:center}
+.morph-total{font-size:10px;color:var(--fb-muted);min-width:28px;text-align:right}
+.inv-totals{display:flex;gap:8px;padding:8px 10px;background:#f8faff;border-radius:6px;margin-top:8px;border:1px solid #dde8ff}
+.inv-total-item{text-align:center;flex:1}
+.inv-total-val{font-size:16px;font-weight:700}
+.inv-total-label{font-size:10px;color:var(--fb-muted);font-weight:600}
+.inv-tabs{display:flex;gap:3px;margin-bottom:8px;flex-wrap:wrap}
+.inv-tab{padding:4px 10px;border-radius:20px;border:1px solid var(--fb-border);background:var(--fb-bg);font-size:11px;font-weight:600;cursor:pointer;color:var(--fb-muted);font-family:var(--font);transition:all .1s}
+.inv-tab.active{background:var(--fb-blue);border-color:var(--fb-blue);color:#fff}
+.morph-group{display:none}
+.morph-group.active{display:block}
+
+/* INDIVIDUAL ANIMAL ROWS */
+.animal-rows{margin-top:6px;display:none}
+.animal-rows.visible{display:block}
+.animal-row{display:flex;align-items:center;gap:5px;padding:5px 6px;background:#fff;border:1px solid var(--fb-border);border-radius:6px;margin-bottom:4px;flex-wrap:wrap}
+.animal-row:last-child{margin-bottom:0}
+.ar-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.ar-badge.m{background:#dbeafe;color:#1e40af}
+.ar-badge.f{background:#fce7f3;color:#9d174d}
+.ar-input{flex:1;min-width:60px;max-width:90px;padding:4px 7px;border:1.5px solid var(--fb-border);border-radius:5px;font-size:12px;font-family:var(--font);background:var(--fb-bg);color:var(--fb-text)}
+.ar-input:focus{outline:none;border-color:var(--fb-blue);background:#fff}
+.ar-label{font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
+.ar-del{background:none;border:none;color:#fa3e3e;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1}
+.ar-del:hover{color:#b91c1c}
+.add-animal-btn{font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px dashed var(--fb-blue);background:transparent;color:var(--fb-blue);cursor:pointer;font-family:var(--font);font-weight:600;margin-top:4px;transition:background .1s}
+.add-animal-btn:hover{background:var(--fb-blue-lt)}
+
+/* QR SCAN MODE */
+.scan-toggle-bar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0f7ff;border:1.5px solid #bcdcff;border-radius:8px;margin-bottom:8px}
+.scan-toggle-bar .stb-label{font-size:12px;font-weight:700;color:var(--fb-blue);flex:1}
+.scan-toggle-bar .stb-my{font-size:10px;color:var(--fb-muted);font-weight:400;display:block}
+.scan-switch{position:relative;width:38px;height:21px;flex-shrink:0}
+.scan-switch input{opacity:0;width:0;height:0}
+.scan-switch-slider{position:absolute;cursor:pointer;inset:0;background:#c8ccd2;border-radius:20px;transition:.15s}
+.scan-switch-slider:before{content:'';position:absolute;height:15px;width:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.scan-switch input:checked + .scan-switch-slider{background:var(--fb-blue)}
+.scan-switch input:checked + .scan-switch-slider:before{transform:translateX(17px)}
+.ar-id-input.scan-armed{border-color:var(--fb-blue);background:var(--fb-blue-lt);box-shadow:0 0 0 3px rgba(24,119,242,.18);animation:scanPulse 1.1s infinite}
+@keyframes scanPulse{0%,100%{box-shadow:0 0 0 2px rgba(24,119,242,.18)}50%{box-shadow:0 0 0 5px rgba(24,119,242,.32)}}
+.ar-id-input.scan-confirmed{border-color:var(--green)!important;background:var(--green-lt)!important;animation:scanFlash .5s ease}
+@keyframes scanFlash{0%{background:#42b72a;border-color:#42b72a}100%{background:var(--green-lt)}}
+.ar-id-input.scan-dupe{border-color:var(--red)!important;background:var(--red-lt)!important}
+.ar-scan-btn{background:var(--fb-blue-lt);color:var(--fb-blue);border:1.5px solid #bcdcff;border-radius:5px;font-size:11px;padding:3px 6px;cursor:pointer;flex-shrink:0;line-height:1;font-family:var(--font)}
+.ar-scan-btn:hover{background:var(--fb-blue);color:#fff}
+.ar-scan-btn.active{background:var(--fb-blue);color:#fff}
+.morph-expand{cursor:pointer;user-select:none}
+.morph-expand:hover .morph-name{text-decoration:underline}
+
+.tub-inv-badge{display:none} /* replaced by inline chips below */
+/* Inline animal detail chips */
+.tub-header-row{display:flex;align-items:center;justify-content:space-between;width:100%}
+.tub-animals{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px}
+.tac{font-size:9px;font-weight:700;padding:1px 4px;border-radius:4px;white-space:nowrap;line-height:1.5}
+.tac-m{background:#dbeafe;color:#1e40af}
+.tac-f{background:#fce7f3;color:#9d174d}
+.tac-t{background:#f0f2f5;color:var(--fb-muted)}
+.tub-morph{font-size:8px;color:var(--fb-blue);font-weight:700;line-height:1.3;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.tub-empty{font-size:9px;color:var(--fb-border);margin-top:4px;font-style:italic}
+
+.tub-alert{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;z-index:3}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-start;justify-content:center;padding:60px 12px 20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--fb-surface);border-radius:12px;width:100%;max-width:500px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--fb-border)}
+.modal-title{font-size:16px;font-weight:700}
+.modal-title-my{font-size:11px;color:var(--fb-muted);font-weight:400;margin-top:2px}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--fb-bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--fb-muted);font-family:var(--font);flex-shrink:0}
+.modal-close:hover{background:var(--fb-border)}
+.modal-body{padding:14px 18px}
+.modal-footer{padding:10px 18px;border-top:1px solid var(--fb-border);display:flex;gap:8px;justify-content:flex-end}
+
+/* FORM */
+.field{margin-bottom:10px}
+.field-label{font-size:11px;font-weight:700;color:var(--fb-muted);letter-spacing:.04em;margin-bottom:4px;display:block}
+.field-label-my{font-size:10px;color:var(--fb-muted);font-weight:400;margin-left:4px}
+.field-input{width:100%;background:var(--fb-bg);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:8px 11px;font-size:13px;font-family:var(--font);color:var(--fb-text);outline:none;transition:border-color .15s}
+.field-input:focus{border-color:var(--fb-blue);background:#fff}
+.field-textarea{resize:vertical;min-height:55px}
+
+/* SEVERITY */
+.sev-row{display:flex;gap:5px;margin-bottom:12px}
+.sev-btn{flex:1;padding:7px 4px;border-radius:var(--r);border:2px solid var(--fb-border);background:var(--fb-bg);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);text-align:center;transition:all .1s}
+.sev-btn.sel-ok{border-color:var(--green);background:var(--green-lt);color:#1a5c0c}
+.sev-btn.sel-warning{border-color:var(--amber);background:var(--amber-lt);color:#856404}
+.sev-btn.sel-urgent{border-color:var(--orange);background:var(--orange-lt);color:#7a3200}
+.sev-btn.sel-critical{border-color:var(--red);background:var(--red-lt);color:#7c0000}
+
+/* ISSUES */
+.issue-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.issue-check{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:var(--r);border:1.5px solid var(--fb-border);cursor:pointer;transition:all .1s;user-select:none}
+.issue-check:hover{border-color:var(--fb-blue);background:var(--fb-blue-lt)}
+.issue-check.checked{border-color:var(--red);background:var(--red-lt)}
+.issue-check.checked .ic-label{color:var(--red)}
+.ic-icon{font-size:15px;flex-shrink:0}
+.ic-label{font-size:12px;font-weight:600;line-height:1.3}
+.ic-my{font-size:10px;color:var(--fb-muted);font-weight:400;line-height:1.2;margin-top:1px}
+
+/* HISTORY */
+.history-entry{border-left:3px solid var(--fb-border);padding:7px 10px;margin-bottom:6px;border-radius:0 var(--r) var(--r) 0;background:var(--fb-bg)}
+.history-entry.ok{border-left-color:var(--green)}
+.history-entry.warning{border-left-color:var(--amber)}
+.history-entry.urgent{border-left-color:var(--orange)}
+.history-entry.critical{border-left-color:var(--red)}
+
+/* ANIMAL PROFILE */
+.ae-entry{border-left:3px solid var(--fb-border);padding:7px 10px;margin-bottom:6px;border-radius:0 var(--r) var(--r) 0;background:var(--fb-bg);font-size:12px}
+.ae-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
+.ae-type{font-weight:700;font-size:11px}
+.ae-date{font-size:10px;color:var(--fb-muted);white-space:nowrap}
+.ae-del{background:none;border:none;color:var(--fb-muted);cursor:pointer;font-size:10px;padding:2px 0;margin-top:3px;text-decoration:underline;font-family:var(--font)}
+.ae-del:hover{color:var(--red)}
+.am-type-btn{padding:6px 4px;font-size:10px}
+.he-top{display:flex;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:4px}
+.he-date{font-size:11px;color:var(--fb-muted)}
+.he-sev{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+.he-issues{font-size:12px;color:var(--fb-text);margin-bottom:2px;font-weight:500}
+.he-note{font-size:11px;color:var(--fb-muted)}
+
+/* ALERTS PAGE */
+.alert-feed{display:flex;flex-direction:column;gap:8px}
+.af-card{background:var(--fb-surface);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.af-card.critical{border-color:var(--red);background:var(--red-lt)}
+.af-card.urgent{border-color:var(--orange);background:var(--orange-lt)}
+.af-card.warning{border-color:var(--amber);background:var(--amber-lt)}
+.af-icon{font-size:20px;flex-shrink:0}
+.af-body{flex:1;min-width:0}
+.af-tub{font-weight:700;font-size:14px}
+.af-tub-my{font-size:11px;color:var(--fb-muted);font-weight:400}
+.af-issues{font-size:12px;color:var(--fb-text);margin-top:3px}
+.af-meta{font-size:11px;color:var(--fb-muted);margin-top:3px}
+.af-resolve{background:var(--fb-surface);border:1.5px solid var(--fb-border);border-radius:var(--r);padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;align-self:center}
+.af-resolve:hover{background:var(--green-lt);border-color:var(--green);color:#1a5c0c}
+
+/* LOG */
+.log-card{background:var(--fb-surface);border:1px solid var(--fb-border);border-radius:var(--r);margin-bottom:7px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.log-card-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer}
+.log-card-header:hover{background:var(--fb-hover)}
+.lc-sev{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.lc-sev.ok{background:var(--green-lt);color:#1a5c0c}
+.lc-sev.warning{background:var(--amber-lt);color:#856404}
+.lc-sev.urgent{background:var(--orange-lt);color:#7a3200}
+.lc-sev.critical{background:var(--red-lt);color:#7c0000}
+.log-body{padding:8px 13px;font-size:12px;color:var(--fb-muted);border-top:1px solid var(--fb-border)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:36px 20px;color:var(--fb-muted)}
+.empty-state .es-icon{font-size:32px;margin-bottom:8px}
+.empty-state .es-text{font-size:13px}
+.empty-state .es-my{font-size:11px;margin-top:4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#050505;color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;transition:all .25s;z-index:999;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .tub{width:80px;min-height:80px}
+  .issue-grid{grid-template-columns:1fr}
+  .nav-clock{display:none}
+}
+</style>
+</head>
+<body>
+
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="position:fixed;inset:0;background:rgba(240,242,245,.92);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div style="width:38px;height:38px;border:3px solid #dde1e7;border-top-color:#1877f2;border-radius:50%;animation:wt-spin .8s linear infinite"></div>
+  <div style="font-size:14px;font-weight:600;color:#65676b">Loading tub data… · ပုံးဒေတာဖွင့်နေသည်…</div>
+  <div style="font-size:11px;color:#8d9db6">Syncing with Google Sheets</div>
+</div>
+<style>@keyframes wt-spin{to{transform:rotate(360deg)}}</style>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">S</div>
+    <div>
+      <div>White Tub Tracker</div>
+      <div style="font-size:10px;color:var(--fb-muted);font-weight:400">အဖြူရောင်ပုံးများ စစ်ဆေးစနစ်</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('grid')">🗺 Tub Map</button>
+    <button class="nav-tab" onclick="showPage('alerts')">🚨 Alerts</button>
+    <button class="nav-tab" onclick="showPage('log')">📋 Log</button>
+    <button class="nav-tab" onclick="showPage('animals')">🐾 Animals</button>
+  </div>
+  <div class="nav-right">
+    <span id="sync-pill" style="font-size:11px;padding:4px 11px;border-radius:20px;font-weight:600;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb">⬤ Loading…</span>
+    <span id="nav-alert-badge" style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none">0!</span>
+    <span class="nav-clock" id="clock"></span>
+    <span id="last-sync" style="font-size:10px;color:var(--fb-muted);white-space:nowrap"></span>
+    <button onclick="loadFromSheet(true)" style="background:var(--fb-blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">↻ Refresh</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-title">FILTER BY STATUS</div>
+    <button class="sb-item active" onclick="setFilter('all')" id="sbf-all">
+      <span class="sb-dot" style="background:var(--fb-border)"></span>All tubs
+      <span class="sb-count" id="sb-all">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('critical')">
+      <span class="sb-dot" style="background:var(--red)"></span>Critical
+      <span class="sb-count red" id="sb-critical">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('urgent')">
+      <span class="sb-dot" style="background:var(--orange)"></span>Urgent
+      <span class="sb-count orange" id="sb-urgent">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('warning')">
+      <span class="sb-dot" style="background:var(--amber)"></span>Warning
+      <span class="sb-count" id="sb-warning">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('ok')">
+      <span class="sb-dot" style="background:var(--green)"></span>OK ကောင်းသည်
+      <span class="sb-count" id="sb-ok">0</span>
+    </button>
+    <button class="sb-item" onclick="setFilter('unchecked')">
+      <span class="sb-dot" style="background:var(--gray)"></span>Unchecked မစစ်ရသေး
+      <span class="sb-count" id="sb-unchecked">0</span>
+    </button>
+    <div class="sb-div"></div>
+    <div class="sb-title">FILTER BY ISSUE</div>
+    <button class="sb-item" onclick="setFilter('death')">💀 Death သေဆုံး</button>
+    <button class="sb-item" onclick="setFilter('sick')">🤒 Sick ဖျားနာ</button>
+    <button class="sb-item" onclick="setFilter('no_water')">🚫 No water bowl</button>
+    <button class="sb-item" onclick="setFilter('not_eating')">🍽 Not eating</button>
+    <button class="sb-item" onclick="setFilter('no_rock')">🪨 No rock/medium</button>
+    <button class="sb-item" onclick="setFilter('check_now')">👁 Check immediately</button>
+    <div class="sb-div"></div>
+    <div class="sb-legend">
+      <div class="sb-legend-title">COLOUR KEY အရောင်အဓိပ္ပာယ်</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--green)"></span>✅ OK</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--amber)"></span>🟡 Warning</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--orange)"></span>🟠 Urgent</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--red)"></span>🔴 Critical ⚡</div>
+      <div class="sb-leg-row"><span class="leg-dot" style="background:var(--gray)"></span>⬜ Not checked</div>
+    </div>
+    <div class="sb-div"></div>
+    <button class="sb-item" onclick="syncAllToday()" style="color:#1877f2;font-weight:700">☁️ Sync all to Sheet</button>
+    <button class="sb-item" onclick="exportData()" style="color:var(--fb-blue)">⬇ Export CSV</button>
+    <button class="sb-item" onclick="resetDay()" style="color:var(--red)">↺ Reset daily</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- TUB MAP -->
+    <div id="page-grid">
+      <div class="summary-strip" id="summary-strip"></div>
+      <div class="toolbar">
+        <input class="tb-search" id="search-input" placeholder="🔍 Search tub e.g. 6A-3, 12B-15..." oninput="renderGrid()">
+        <button class="filter-btn active" id="fb-all"      onclick="setFilter('all')">All</button>
+        <button class="filter-btn"        id="fb-critical" onclick="setFilter('critical')">🔴</button>
+        <button class="filter-btn"        id="fb-urgent"   onclick="setFilter('urgent')">🟠</button>
+        <button class="filter-btn"        id="fb-warning"  onclick="setFilter('warning')">🟡</button>
+        <button class="filter-btn"        id="fb-ok"       onclick="setFilter('ok')">✅</button>
+        <button class="filter-btn"        id="fb-unchecked" onclick="setFilter('unchecked')">⬜</button>
+        <button class="fb-btn sm" onclick="expandAll()">Expand all</button>
+        <button class="fb-btn sm" style="background:var(--fb-bg);color:var(--fb-text);border:1px solid var(--fb-border)" onclick="collapseAll()">Collapse</button>
+        <button class="fb-btn sm" style="background:#1877f2;margin-left:4px" onclick="syncAllToday()">☁️ Sync all to Sheet</button>
+      </div>
+      <div id="tub-grid-container"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="page-alerts" style="display:none">
+      <div class="summary-strip" id="alert-summary"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--fb-muted);letter-spacing:.05em;margin-bottom:10px">ACTIVE ISSUES — ချက်ချင်းဆောင်ရွက်ရမည်</div>
+      <div class="alert-feed" id="alert-feed"></div>
+    </div>
+
+    <!-- LOG -->
+    <div id="page-log" style="display:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+        <input class="tb-search" id="log-search" placeholder="🔍 Search tub ID..." oninput="renderLog()" style="max-width:180px">
+        <select class="field-input" id="log-filter-sel" onchange="renderLog()" style="width:auto;padding:6px 10px;font-size:12px">
+          <option value="all">All entries</option>
+          <option value="critical">Critical only</option>
+          <option value="urgent">Urgent only</option>
+          <option value="warning">Warning only</option>
+          <option value="ok">OK checks</option>
+        </select>
+        <button class="fb-btn sm" onclick="exportData()" style="margin-left:auto">⬇ Export CSV</button>
+      </div>
+      <div id="log-list"></div>
+    </div>
+
+    <!-- ANIMALS -->
+    <div id="page-animals" style="display:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+        <input class="tb-search" id="animal-search-input" placeholder="🔍 Enter or scan animal ID e.g. BD001..." style="max-width:260px" onkeydown="if(event.key==='Enter'){event.preventDefault();openAnimalModal(this.value.trim());}">
+        <button class="fb-btn sm" style="background:#1877f2" onclick="openAnimalModal(document.getElementById('animal-search-input').value.trim())">Open profile</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--fb-muted);letter-spacing:.05em;margin-bottom:10px">ANIMALS WITH HISTORY — မှတ်တမ်းရှိသော တိရစ္ဆာန်များ</div>
+      <div id="animals-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TUB MODAL -->
+<div class="modal-overlay" id="tub-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">Tub 6A-1</div>
+        <div class="modal-title-my" id="modal-title-my">အဖြူရောင်ပုံး စစ်ဆေးရန်</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="field">
+        <div class="field-label">SEVERITY <span class="field-label-my">အပြင်းအထန်အဆင့်</span></div>
+        <div class="sev-row">
+          <button class="sev-btn" id="sev-ok"       onclick="setSev('ok')">✅ OK ကောင်း</button>
+          <button class="sev-btn" id="sev-warning"   onclick="setSev('warning')">🟡 Warning</button>
+          <button class="sev-btn" id="sev-urgent"    onclick="setSev('urgent')">🟠 Urgent</button>
+          <button class="sev-btn" id="sev-critical"  onclick="setSev('critical')">🔴 Critical</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">ISSUES FOUND <span class="field-label-my">တွေ့ရသောပြဿနာများ</span></div>
+        <div class="issue-grid" id="issue-grid"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">🐉 ANIMALS IN TUB <span class="field-label-my">ပုံးထဲ တိရစ္ဆာန်များ</span></div>
+        <div id="inv-container" style="border:1.5px solid var(--fb-border);border-radius:8px;padding:10px;background:#fafbff;margin-bottom:4px"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">NOTES <span class="field-label-my">မှတ်စု</span></label>
+        <textarea class="field-input field-textarea" id="modal-notes" placeholder="Describe findings... တွေ့ရှိချက်များ ဖော်ပြပါ..."></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">CHECKED BY <span class="field-label-my">စစ်ဆေးသူ</span></label>
+        <input class="field-input" id="modal-employee" placeholder="Your name / နာမည်">
+      </div>
+
+      <div class="field">
+        <div class="field-label">HISTORY <span class="field-label-my">မှတ်တမ်း</span></div>
+        <div id="modal-history" style="max-height:160px;overflow-y:auto"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="fb-btn" style="background:var(--fb-bg);color:var(--fb-text);border:1px solid var(--fb-border)" onclick="closeModal()">Cancel မလုပ်တော့</button>
+      <button class="fb-btn" style="background:#42b72a;color:#fff;border:none" onclick="saveEntry(false)">💾 Save locally</button>
+      <button class="fb-btn" style="background:#1877f2;color:#fff;border:none" onclick="saveEntry(true)">☁️ Save to Google Sheet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANIMAL PROFILE MODAL -->
+<div class="modal-overlay" id="animal-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="am-title">🐉 Animal</div>
+        <div class="modal-title-my" id="am-subtitle">တိရစ္ဆာန်မှတ်တမ်း</div>
+      </div>
+      <button class="modal-close" onclick="closeAnimalModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div id="am-current-card" style="background:var(--fb-bg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.6"></div>
+
+      <div class="field" id="am-sparkline-field" style="display:none">
+        <div class="field-label">WEIGHT TREND <span class="field-label-my">အလေးချိန်ခြေရာ</span></div>
+        <div id="am-sparkline"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">ADD EVENT <span class="field-label-my">မှတ်တမ်းအသစ်ထည့်ရန်</span></div>
+        <div class="sev-row" id="am-type-row">
+          <button class="sev-btn am-type-btn" id="amtype-location" onclick="setAmType('location')">📍 Location</button>
+          <button class="sev-btn am-type-btn" id="amtype-weight" onclick="setAmType('weight')">⚖️ Weight</button>
+          <button class="sev-btn am-type-btn" id="amtype-health" onclick="setAmType('health')">🩺 Health</button>
+          <button class="sev-btn am-type-btn" id="amtype-breeding" onclick="setAmType('breeding')">💞 Breeding</button>
+          <button class="sev-btn am-type-btn" id="amtype-egg" onclick="setAmType('egg')">🥚 Eggs</button>
+          <button class="sev-btn am-type-btn" id="amtype-note" onclick="setAmType('note')">📝 Note</button>
+        </div>
+
+        <div id="am-fields" style="margin-top:8px"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div>
+            <label class="field-label">DATE</label>
+            <input class="field-input" type="date" id="am-date">
+          </div>
+          <div>
+            <label class="field-label">LOGGED BY</label>
+            <input class="field-input" id="am-employee" placeholder="Your name">
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label class="field-label">NOTE (optional)</label>
+          <textarea class="field-input field-textarea" id="am-note" placeholder="Any extra detail..."></textarea>
+        </div>
+        <button class="fb-btn" style="background:#1877f2;color:#fff;border:none;margin-top:10px;width:100%" onclick="addAnimalEvent()">💾 Save event & sync</button>
+      </div>
+
+      <div class="field">
+        <div class="field-label">TIMELINE <span class="field-label-my">မှတ်တမ်းစဉ်</span></div>
+        <div id="am-timeline" style="max-height:220px;overflow-y:auto"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ROW DEFINITIONS ───────────────────────────────────────────────
+// Left column: rows 6A, 6B, 7A, 7B ... 22A, 22B, 23A (top)
+// Right column: rows 29A, 29B, 30A ... 45A, 45B, 46A (top)
+// Each row has 26 tubs numbered 1–26
+
+var LEFT_ROWS = [];
+LEFT_ROWS.push('23A');
+for(var n=22;n>=6;n--){ LEFT_ROWS.push(n+'B'); LEFT_ROWS.push(n+'A'); }
+
+var RIGHT_ROWS = [];
+RIGHT_ROWS.push('46A');
+for(var n=45;n>=29;n--){ RIGHT_ROWS.push(n+'B'); RIGHT_ROWS.push(n+'A'); }
+
+var ALL_ROWS = LEFT_ROWS.concat(RIGHT_ROWS);
+var TUBS_PER_ROW = 26;
+
+// Generate all tub IDs: rowId + '-' + tubNumber (1-26)
+var ALL_TUBS = [];
+ALL_ROWS.forEach(function(row){
+  for(var t=1;t<=TUBS_PER_ROW;t++){
+    ALL_TUBS.push(row+'-'+t);
+  }
+});
+
+// ── ISSUE DEFINITIONS (English + Burmese) ─────────────────────────
+var ISSUES = [
+  {id:'death',      icon:'💀', en:'Death',            my:'သေဆုံး'},
+  {id:'sick',       icon:'🤒', en:'Sick animal',       my:'ဖျားနာသော တိရစ္ဆာန်'},
+  {id:'no_water',   icon:'🚫', en:'No water bowl',     my:'ရေအိုးမရှိ'},
+  {id:'not_eating', icon:'🍽', en:'Not eating',        my:'အစာမစားသော'},
+  {id:'no_rock',    icon:'🪨', en:'No rock / medium',  my:'ကျောက်/မြေမရှိ'},
+  {id:'skinny',     icon:'⚖️', en:'Too skinny',        my:'ပိန်လှီသော'},
+  {id:'injury',     icon:'🩹', en:'Injury',            my:'ဒဏ်ရာ'},
+  {id:'fungus',     icon:'🍄', en:'Fungus / skin',     my:'မှို/အရေပြားပြဿနာ'},
+  {id:'dirty',      icon:'🧹', en:'Dirty / unclean',   my:'ညစ်ပတ်နေ'},
+  {id:'no_marking', icon:'🏷', en:'No marking',        my:'အမှတ်အသားမရှိ'},
+  {id:'escaped',    icon:'🚪', en:'Animal escaped',    my:'တိရစ္ဆာန်ထွက်ပြေး'},
+  {id:'check_now',  icon:'👁', en:'Check immediately', my:'ချက်ချင်းစစ်ဆေးပါ'},
+];
+
+// Burmese row translations
+function rowBurmese(rowId){
+  var num = parseInt(rowId);
+  return 'အတန်း ' + num + ' (' + rowId + ')';
+}
+
+function sevBurmese(s){
+  return {ok:'ကောင်းသည်',warning:'သတိပြုရန်',urgent:'အရေးပေါ်',critical:'အန္တရာယ်ရှိ',unchecked:'မစစ်ရသေး'}[s]||'မစစ်ရသေး';
+}
+
+// ── DATA ──────────────────────────────────────────────────────────
+function loadData(){
+  try{var d=localStorage.getItem('srr_wt3');return d?JSON.parse(d):{tubs:{},log:[],animalEvents:{}};}catch(e){return{tubs:{},log:[],animalEvents:{}};}
+}
+function saveData(){ localStorage.setItem('srr_wt3',JSON.stringify(DATA)); }
+var DATA = loadData();
+if(!DATA.animalEvents) DATA.animalEvents = {};
+
+// ── STATE ─────────────────────────────────────────────────────────
+var currentFilter='all';
+var currentTubId=null;
+var currentSev='';
+var currentIssues=[];
+var rowOpenState={};
+var currentAnimalId='';
+var currentAmType='weight';
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function pad(n){return String(n).padStart(2,'0');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nowStr(){ var d=new Date();return d.toISOString().slice(0,10)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function getTubState(id){
+  var t=DATA.tubs[id];
+  if(!t||t.lastDate!==todayStr()) return 'unchecked';
+  return t.severity||'unchecked';
+}
+function getTubIssues(id){
+  var t=DATA.tubs[id];
+  if(!t||t.lastDate!==todayStr()) return [];
+  return t.issues||[];
+}
+function sevColor(s){
+  return {ok:'#42b72a',warning:'#f7b928',urgent:'#ff6b00',critical:'#fa3e3e',unchecked:'#8d9db6'}[s]||'#8d9db6';
+}
+function sevLabel(s){
+  return {ok:'✅ OK',warning:'🟡 Warning',urgent:'🟠 Urgent',critical:'🔴 Critical',unchecked:'⬜ Unchecked'}[s]||'⬜ Unchecked';
+}
+function issueObj(id){ return ISSUES.find(function(x){return x.id===id;}); }
+function issueLabel(id){ var i=issueObj(id); return i?i.icon+' '+i.en:id; }
+
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2200);
+}
+
+// Clock
+function tick(){
+  var n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' '+pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+}
+setInterval(tick,1000); tick();
+
+// ── FILTER ────────────────────────────────────────────────────────
+function setFilter(f){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.sb-item').forEach(function(el){el.classList.remove('active');});
+  var fb=document.getElementById('fb-'+f);
+  if(fb) fb.classList.add('active');
+  else document.getElementById('fb-all').classList.add('active');
+  renderGrid();
+}
+
+function tubMatchesFilter(id){
+  var s=getTubState(id);
+  var issues=getTubIssues(id);
+  if(currentFilter==='all') return true;
+  if(['ok','warning','urgent','critical','unchecked'].indexOf(currentFilter)>-1) return s===currentFilter;
+  return issues.indexOf(currentFilter)>-1;
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────
+function updateSummary(){
+  var counts={ok:0,warning:0,urgent:0,critical:0,unchecked:0};
+  ALL_TUBS.forEach(function(id){var s=getTubState(id);counts[s]=(counts[s]||0)+1;});
+  var total=ALL_TUBS.length;
+  var checked=total-counts.unchecked;
+
+  document.getElementById('summary-strip').innerHTML=
+    sc('Total / စုစုပေါင်း',total,'#1877f2','')+
+    sc('Checked / စစ်ပြီး',checked,'#42b72a','')+
+    sc('🔴 Critical',counts.critical,'#fa3e3e','')+
+    sc('🟠 Urgent',counts.urgent,'#ff6b00','')+
+    sc('🟡 Warning',counts.warning,'#f7b928','')+
+    sc('⬜ Unchecked မစစ်ရသေး',counts.unchecked,'#8d9db6','');
+
+  document.getElementById('sb-all').textContent=total;
+  document.getElementById('sb-critical').textContent=counts.critical;
+  document.getElementById('sb-urgent').textContent=counts.urgent;
+  document.getElementById('sb-warning').textContent=counts.warning;
+  document.getElementById('sb-ok').textContent=counts.ok;
+  document.getElementById('sb-unchecked').textContent=counts.unchecked;
+
+  var alerts=counts.critical+counts.urgent;
+  var badge=document.getElementById('nav-alert-badge');
+  if(alerts>0){badge.style.display='';badge.textContent=alerts+'!';}
+  else badge.style.display='none';
+}
+
+function sc(label,val,color){
+  var parts=label.split('/');
+  var en=parts[0].trim(), my=parts[1]?parts[1].trim():'';
+  return '<div class="stat-card"><div class="stat-val" style="color:'+color+'">'+val+'</div><div class="stat-label">'+esc(en)+'</div>'+(my?'<div class="stat-my">'+esc(my)+'</div>':'')+'</div>';
+}
+
+// ── ROW STATS ─────────────────────────────────────────────────────
+function getRowStats(rowId){
+  var counts={ok:0,warning:0,urgent:0,critical:0,unchecked:0};
+  for(var t=1;t<=TUBS_PER_ROW;t++){
+    var s=getTubState(rowId+'-'+t);
+    counts[s]=(counts[s]||0)+1;
+  }
+  return counts;
+}
+
+// ── RENDER GRID ───────────────────────────────────────────────────
+function renderGrid(){
+  updateSummary();
+  var search=document.getElementById('search-input').value.trim().toLowerCase();
+  var html='';
+
+  function renderColumn(rows, colTitle){
+    var colHtml='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;color:var(--fb-muted);letter-spacing:.06em;margin-bottom:8px;padding:0 4px">'+colTitle+'</div>';
+    rows.forEach(function(rowId){
+      var stats=getRowStats(rowId);
+      var hasIssues=stats.critical>0||stats.urgent>0||stats.warning>0;
+      var isOpen = rowOpenState[rowId]===true; // default collapsed
+
+      // Pills
+      var pills='';
+      if(stats.critical>0) pills+='<span class="row-pill critical">'+stats.critical+' critical</span>';
+      if(stats.urgent>0)   pills+='<span class="row-pill urgent">'+stats.urgent+' urgent</span>';
+      if(stats.warning>0)  pills+='<span class="row-pill warning">'+stats.warning+' warning</span>';
+      if(stats.ok>0)       pills+='<span class="row-pill ok">'+stats.ok+' ok</span>';
+      if(stats.unchecked>0)pills+='<span class="row-pill unchecked">'+stats.unchecked+' left</span>';
+
+      colHtml+='<div class="row-section">';
+      colHtml+='<div class="row-header" onclick="toggleRow(\''+rowId+'\')">';
+      colHtml+='<span class="row-header-toggle'+(isOpen?' open':'')+'\" id="arrow-'+rowId+'">▶</span>';
+      colHtml+='<span class="row-id">'+rowId+'</span>';
+      colHtml+='<span class="row-my" style="font-size:10px;color:var(--fb-muted)">အတန်း &nbsp; '+TUBS_PER_ROW+' ပုံး</span>';
+      colHtml+='<div class="row-stats">'+pills+'</div>';
+      colHtml+='</div>';
+
+      // Tub grid
+      colHtml+='<div class="row-body'+(isOpen?' open':'')+'\" id="rowbody-'+rowId+'">';
+      colHtml+='<div class="tub-row-grid">';
+      for(var t=1;t<=TUBS_PER_ROW;t++){
+        var tubId=rowId+'-'+t;
+        var state=getTubState(tubId);
+        var issues=getTubIssues(tubId);
+
+        // Search filter
+        var matchSearch=!search||tubId.toLowerCase().includes(search)||rowId.toLowerCase().includes(search);
+        var matchFilter=tubMatchesFilter(tubId);
+        if(!matchSearch||!matchFilter){
+          colHtml+='<div class="tub" style="opacity:.1;pointer-events:none;border-style:dashed"><div class="tub-num">'+t+'</div></div>';
+          continue;
+        }
+
+        var ihtml='';
+        issues.slice(0,3).forEach(function(iss){
+          var def=issueObj(iss);
+          if(def) ihtml+='<span class="tub-ico" title="'+esc(def.en)+' — '+esc(def.my)+'">'+def.icon+'</span>';
+        });
+        if(issues.length>3) ihtml+='<span class="tub-ico">+</span>';
+
+        var alertBadge=(state==='critical'||state==='urgent')?'<div class="tub-alert">!</div>':'';
+
+        // Get animal data
+        var inv     = getTubSummary(tubId);
+        var invData = getInvData(tubId);
+
+        // Build morph labels + group counts from inventory
+        var allMorphs = [], groupCounts = {};
+        if(invData){
+          Object.keys(invData).forEach(function(key){
+            var arr = invData[key];
+            if(!Array.isArray(arr)) return;
+            arr.forEach(function(a){
+              if(a.morph && allMorphs.indexOf(a.morph)===-1) allMorphs.push(a.morph);
+              if(a.group) groupCounts[a.group] = (groupCounts[a.group]||0)+1;
+            });
+          });
+        }
+        var morphLabel = allMorphs.slice(0,2).join(', ')+(allMorphs.length>2?' +'+(allMorphs.length-2):'');
+
+        // Group chips — e.g. G1:3 G2:5
+        var grpChips='';
+        Object.keys(groupCounts).sort(function(a,b){return a-b;}).slice(0,5).forEach(function(g){
+          grpChips+='<span style="font-size:8px;font-weight:700;padding:1px 3px;border-radius:3px;background:#e7f3ff;color:#1877f2;white-space:nowrap;line-height:1.5">G'+g+':'+groupCounts[g]+'</span>';
+        });
+
+        colHtml+='<div class="tub '+state+'" onclick="openTubModal(\''+tubId+'\')" title="'+esc(tubId)+'">';
+        colHtml+=alertBadge;
+
+        // Top row: tub number + issue icons
+        colHtml+='<div class="tub-header-row">';
+        colHtml+='<div class="tub-num">#'+t+'</div>';
+        if(ihtml) colHtml+='<div class="tub-icons">'+ihtml+'</div>';
+        colHtml+='</div>';
+
+        // Animal counts
+        if(inv.total > 0){
+          colHtml+='<div class="tub-animals">';
+          colHtml+='<span class="tac tac-m">'+inv.males+'♂</span>';
+          colHtml+='<span class="tac tac-f">'+inv.females+'♀</span>';
+          colHtml+='<span class="tac tac-t">'+inv.total+'</span>';
+          colHtml+='</div>';
+          // Group breakdown
+          if(grpChips) colHtml+='<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">'+grpChips+'</div>';
+          if(morphLabel) colHtml+='<div class="tub-morph">'+esc(morphLabel)+'</div>';
+        } else {
+          colHtml+='<div class="tub-empty">empty</div>';
+        }
+
+        colHtml+='<div class="tub-bar"></div>';
+        colHtml+='</div>';
+      }
+      colHtml+='</div></div></div>';
+    });
+    colHtml+='</div>';
+    return colHtml;
+  }
+
+  html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  html+=renderColumn(LEFT_ROWS, 'LEFT — အဆင့် 6–23');
+  html+=renderColumn(RIGHT_ROWS,'RIGHT — အဆင့် 29–46');
+  html+='</div>';
+
+  document.getElementById('tub-grid-container').innerHTML=html;
+}
+
+function toggleRow(rowId){
+  var wasOpen = rowOpenState[rowId]===true;
+  rowOpenState[rowId] = !wasOpen;
+  var body=document.getElementById('rowbody-'+rowId);
+  var arrow=document.getElementById('arrow-'+rowId);
+  if(body) body.classList.toggle('open', rowOpenState[rowId]===true);
+  if(arrow) arrow.classList.toggle('open', rowOpenState[rowId]===true);
+}
+
+function expandAll(){
+  ALL_ROWS.forEach(function(r){ rowOpenState[r]=true; });
+  renderGrid();
+}
+function collapseAll(){
+  ALL_ROWS.forEach(function(r){ rowOpenState[r]=false; });
+  renderGrid();
+}
+
+// ── TUB MODAL ─────────────────────────────────────────────────────
+function openTubModal(id){
+  currentTubId=id;
+  currentSev='';
+  currentIssues=[];
+  var t=DATA.tubs[id];
+  if(t&&t.lastDate===todayStr()){
+    currentSev=t.severity||'';
+    currentIssues=(t.issues||[]).slice();
+  }
+  var parts=id.split('-');
+  var rowId=parts[0], num=parts[1];
+  document.getElementById('modal-title').textContent='Tub '+esc(id)+' (Row '+esc(rowId)+', #'+esc(num)+')';
+  document.getElementById('modal-title-my').textContent='အတန်း '+esc(rowId)+' — ပုံးနံပါတ် '+esc(num);
+  document.getElementById('modal-notes').value=(t&&t.lastDate===todayStr()?t.notes:'')||'';
+  document.getElementById('modal-employee').value=localStorage.getItem('srr_last_emp')||'';
+  renderSevBtns();
+  renderIssueGrid();
+  renderHistory(id);
+  renderInventoryModal(id);
+  document.getElementById('tub-modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('tub-modal').classList.remove('open'); }
+
+function setSev(s){ currentSev=s; renderSevBtns(); }
+function renderSevBtns(){
+  ['ok','warning','urgent','critical'].forEach(function(s){
+    document.getElementById('sev-'+s).className='sev-btn'+(currentSev===s?' sel-'+s:'');
+  });
+}
+
+function renderIssueGrid(){
+  var html='';
+  ISSUES.forEach(function(iss){
+    var checked=currentIssues.indexOf(iss.id)>-1;
+    html+='<div class="issue-check'+(checked?' checked':'')+'" onclick="toggleIssue(\''+iss.id+'\')">';
+    html+='<span class="ic-icon">'+iss.icon+'</span>';
+    html+='<div><div class="ic-label">'+esc(iss.en)+'</div><div class="ic-my">'+esc(iss.my)+'</div></div>';
+    html+='</div>';
+  });
+  document.getElementById('issue-grid').innerHTML=html;
+}
+
+function toggleIssue(id){
+  var idx=currentIssues.indexOf(id);
+  if(idx>-1) currentIssues.splice(idx,1); else currentIssues.push(id);
+  renderIssueGrid();
+}
+
+function renderHistory(id){
+  var log=(DATA.log||[]).filter(function(e){return e.tub===id;}).slice().reverse().slice(0,8);
+  if(!log.length){
+    document.getElementById('modal-history').innerHTML='<div style="color:var(--fb-muted);font-size:12px">မှတ်တမ်းမရှိသေးပါ — No history yet.</div>';
+    return;
+  }
+  var html='';
+  log.forEach(function(e){
+    html+='<div class="history-entry '+e.severity+'">';
+    html+='<div class="he-top"><span class="he-date">'+esc(e.date)+' — '+esc(e.employee||'Unknown')+'</span>';
+    html+='<span class="he-sev" style="background:'+sevColor(e.severity)+'22;color:'+sevColor(e.severity)+'">'+sevLabel(e.severity)+'</span></div>';
+    if(e.issues&&e.issues.length) html+='<div class="he-issues">'+e.issues.map(issueLabel).join(' · ')+'</div>';
+    if(e.notes) html+='<div class="he-note">'+esc(e.notes)+'</div>';
+    html+='</div>';
+  });
+  document.getElementById('modal-history').innerHTML=html;
+}
+
+function saveEntry(syncToSheet) {
+  if (!currentTubId) return;
+  var notes = document.getElementById('modal-notes').value.trim();
+  var emp   = document.getElementById('modal-employee').value.trim();
+  if (emp) localStorage.setItem('srr_last_emp', emp);
+  var sev   = currentSev || 'ok';
+  var date  = nowStr();
+  var existingInv = (DATA.tubs[currentTubId]&&DATA.tubs[currentTubId].inventory)||{};
+  DATA.tubs[currentTubId] = { severity:sev, issues:currentIssues.slice(), notes:notes, employee:emp, lastDate:todayStr(), inventory:existingInv };
+  if (!DATA.log) DATA.log = [];
+  DATA.log.push({ tub:currentTubId, severity:sev, issues:currentIssues.slice(), notes:notes, employee:emp, date:date });
+  saveData();
+  closeModal();
+  renderGrid();
+  if (syncToSheet) {
+    pushToSheet(currentTubId, sev, currentIssues.slice(), notes, emp, date);
+  } else {
+    showToast('💾 Saved locally — ' + currentTubId);
+  }
+}
+
+// ── ALERTS PAGE ───────────────────────────────────────────────────
+function renderAlerts(){
+  var items=[];
+  ALL_TUBS.forEach(function(id){
+    var s=getTubState(id);
+    if(s==='critical'||s==='urgent'||s==='warning'){
+      items.push({id:id,sev:s,issues:getTubIssues(id),t:DATA.tubs[id]});
+    }
+  });
+  items.sort(function(a,b){ return ({critical:0,urgent:1,warning:2}[a.sev]||3)-({critical:0,urgent:1,warning:2}[b.sev]||3); });
+
+  var counts={critical:0,urgent:0,warning:0};
+  items.forEach(function(x){counts[x.sev]=(counts[x.sev]||0)+1;});
+  document.getElementById('alert-summary').innerHTML=
+    sc('🔴 Critical',counts.critical,'#fa3e3e','')+
+    sc('🟠 Urgent',counts.urgent,'#ff6b00','')+
+    sc('🟡 Warning',counts.warning,'#f7b928','')+
+    sc('Total alerts / စုစုပေါင်း',items.length,'#1877f2','');
+
+  if(!items.length){
+    document.getElementById('alert-feed').innerHTML='<div class="empty-state"><div class="es-icon">✅</div><div class="es-text">No active alerts — all checked tubs are OK!</div><div class="es-my">စစ်ဆေးပြီးသော ပုံးအားလုံး ကောင်းမွန်သည်</div></div>';
+    return;
+  }
+  var html='';
+  var icons={critical:'🚨',urgent:'⚠️',warning:'🔔'};
+  items.forEach(function(x){
+    var parts=x.id.split('-');
+    html+='<div class="af-card '+x.sev+'">';
+    html+='<div class="af-icon">'+icons[x.sev]+'</div>';
+    html+='<div class="af-body">';
+    html+='<div class="af-tub">'+esc(x.id)+' <span class="af-tub-my">— အတန်း '+esc(parts[0])+' ပုံး #'+esc(parts[1])+'</span></div>';
+    if(x.issues&&x.issues.length) html+='<div class="af-issues">'+x.issues.map(issueLabel).join(' · ')+'</div>';
+    if(x.t&&x.t.notes) html+='<div class="af-meta">'+esc(x.t.notes)+'</div>';
+    if(x.t&&x.t.employee) html+='<div class="af-meta">By: '+esc(x.t.employee)+'</div>';
+    html+='</div>';
+    html+='<button class="af-resolve" onclick="quickResolve(\''+x.id+'\')">✅ Resolve</button>';
+    html+='</div>';
+  });
+  document.getElementById('alert-feed').innerHTML=html;
+}
+
+function quickResolve(id){
+  DATA.tubs[id]={severity:'ok',issues:[],notes:'Resolved ဖြေရှင်းပြီး',employee:localStorage.getItem('srr_last_emp')||'',lastDate:todayStr()};
+  DATA.log.push({tub:id,severity:'ok',issues:[],notes:'Resolved ဖြေရှင်းပြီး',employee:localStorage.getItem('srr_last_emp')||'',date:nowStr()});
+  saveData();
+  pushToSheet(id,'ok',[],'Resolved ဖြေရှင်းပြီး',localStorage.getItem('srr_last_emp')||'',nowStr());
+  renderAlerts(); renderGrid();
+  showToast('✅ '+id+' resolved & synced');
+}
+
+// ── LOG PAGE ──────────────────────────────────────────────────────
+function renderLog(){
+  var search=(document.getElementById('log-search').value||'').trim().toLowerCase();
+  var filter=document.getElementById('log-filter-sel').value;
+  var log=(DATA.log||[]).slice().reverse();
+  if(search) log=log.filter(function(e){return e.tub&&e.tub.toLowerCase().includes(search);});
+  if(filter!=='all') log=log.filter(function(e){return e.severity===filter;});
+  if(!log.length){
+    document.getElementById('log-list').innerHTML='<div class="empty-state"><div class="es-icon">📋</div><div class="es-text">No log entries yet.</div><div class="es-my">မှတ်တမ်းမရှိသေးပါ</div></div>';
+    return;
+  }
+  var html='';
+  log.slice(0,300).forEach(function(e){
+    var parts=(e.tub||'').split('-');
+    html+='<div class="log-card">';
+    html+='<div class="log-card-header" onclick="openTubModal(\''+esc(e.tub)+'\')">';
+    html+='<div><span style="font-weight:700">'+esc(e.tub)+'</span> <span style="font-size:11px;color:var(--fb-muted);margin-left:6px">'+esc(e.date)+'</span></div>';
+    html+='<span class="lc-sev '+e.severity+'">'+sevLabel(e.severity)+' '+sevBurmese(e.severity)+'</span>';
+    html+='</div>';
+    if((e.issues&&e.issues.length)||e.notes||e.employee){
+      html+='<div class="log-body">';
+      if(e.issues&&e.issues.length) html+='<div style="margin-bottom:3px">'+e.issues.map(issueLabel).join(' · ')+'</div>';
+      if(e.notes) html+='<div style="color:var(--fb-text)">'+esc(e.notes)+'</div>';
+      if(e.employee) html+='<div style="font-size:10px;margin-top:3px">By: '+esc(e.employee)+'</div>';
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('log-list').innerHTML=html;
+}
+
+// ── PAGES ─────────────────────────────────────────────────────────
+function showPage(p){
+  ['grid','alerts','log','animals'].forEach(function(pg){
+    var el=document.getElementById('page-'+pg);
+    if(el) el.style.display=pg===p?'block':'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach(function(el,i){
+    el.classList.toggle('active',['grid','alerts','log','animals'][i]===p);
+  });
+  if(p==='alerts') renderAlerts();
+  if(p==='log') renderLog();
+  if(p==='animals') renderAnimalsList();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportData(){
+  var rows=[['Date','Tub','Row','Tub#','Severity','Issues','Notes','Employee']];
+  (DATA.log||[]).forEach(function(e){
+    var parts=(e.tub||'').split('-');
+    rows.push([e.date,e.tub,parts[0]||'',parts[1]||'',e.severity,(e.issues||[]).join('; '),e.notes||'',e.employee||'']);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='SRR_WhiteTubs_'+todayStr()+'.csv';
+  a.click();
+  showToast('✅ CSV exported!');
+}
+
+function resetDay(){
+  if(!confirm('Reset all today\'s checks?\nယနေ့ စစ်ဆေးမှုများအားလုံး ပြန်လည်မူလအခြေသို့ ပြောင်းမည်လား?\n(History is kept — မှတ်တမ်းများသိမ်းထားမည်)')) return;
+  ALL_TUBS.forEach(function(id){
+    if(DATA.tubs[id]&&DATA.tubs[id].lastDate===todayStr()) DATA.tubs[id].lastDate='';
+  });
+  saveData(); renderGrid();
+  showToast('Daily checks reset — ပြန်လည်သတ်မှတ်ပြီး');
+}
+
+// Close on backdrop click
+document.getElementById('tub-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('animal-modal').addEventListener('click',function(e){if(e.target===this)closeAnimalModal();});
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// INDIVIDUAL ANIMAL HISTORY (weight / health / breeding / eggs / notes)
+// ═══════════════════════════════════════════════════════════════
+var AM_TYPE_META = {
+  location: {icon:'📍', label:'Location', color:'#17a2b8'},
+  weight:   {icon:'⚖️', label:'Weight',   color:'#1877f2'},
+  health:   {icon:'🩺', label:'Health',   color:'#fa3e3e'},
+  breeding: {icon:'💞', label:'Breeding', color:'#d63384'},
+  egg:      {icon:'🥚', label:'Eggs',     color:'#f7b928'},
+  note:     {icon:'📝', label:'Note',     color:'#8d9db6'}
+};
+
+function normId(id){ return (id||'').trim().toUpperCase(); }
+
+// Find where this animal ID currently lives (scans every tub's inventory)
+function findAnimalCurrentInfo(id){
+  var nid = normId(id);
+  if(!nid) return null;
+  for(var tubId in DATA.tubs){
+    var inv = (DATA.tubs[tubId]&&DATA.tubs[tubId].inventory)||{};
+    for(var key in inv){
+      var arr = inv[key];
+      if(!Array.isArray(arr)) continue;
+      for(var j=0;j<arr.length;j++){
+        if(arr[j] && normId(arr[j].animalId)===nid){
+          var parts = key.split('::');
+          return { tubId:tubId, color:parts[0], sex:parts[1], group:arr[j].group||'', weight:arr[j].weight||'' };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function getAnimalEvents(id){
+  var nid = normId(id);
+  return (DATA.animalEvents && DATA.animalEvents[nid]) || [];
+}
+
+// Auto-logs a location-change event when an animal's tub differs from its
+// last recorded location (no-op if it hasn't actually changed).
+function maybeLogLocationEvent(rawId, tubId){
+  var id = normId(rawId);
+  if(!id || !tubId) return;
+  if(!DATA.animalEvents) DATA.animalEvents = {};
+  var events = DATA.animalEvents[id] || [];
+  var lastLoc = null;
+  for(var i=events.length-1;i>=0;i--){
+    if(events[i].type==='location'){ lastLoc = events[i]; break; }
+  }
+  if(lastLoc && lastLoc.tub===tubId) return; // no change, don't spam the timeline
+
+  var ev = {
+    id: 'ev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    type: 'location',
+    date: todayStr(),
+    employee: localStorage.getItem('srr_last_emp')||'',
+    note: lastLoc ? '' : 'First recorded location',
+    tub: tubId,
+    fromTub: lastLoc ? lastLoc.tub : '',
+    ts: nowStr()
+  };
+  DATA.animalEvents[id] = events.concat([ev]);
+  saveData();
+  pushAnimalEvent(id, ev);
+}
+
+// Seeds a location entry for every animal ID currently sitting in a tub —
+// called whenever a tub's inventory is rendered, so existing animals get
+// their first location record without any manual data entry.
+function seedLocationEventsForTub(tubId){
+  var inv = (DATA.tubs[tubId] && DATA.tubs[tubId].inventory) || {};
+  Object.keys(inv).forEach(function(key){
+    var arr = inv[key];
+    if(!Array.isArray(arr)) return;
+    arr.forEach(function(a){
+      if(a && a.animalId && a.animalId.trim()){
+        maybeLogLocationEvent(a.animalId, tubId);
+      }
+    });
+  });
+}
+
+function openAnimalModal(id){
+  if(!id || !id.trim()){ showToast('⚠️ Enter/scan an animal ID first'); return; }
+  currentAnimalId = normId(id);
+  document.getElementById('am-date').value = todayStr();
+  document.getElementById('am-employee').value = localStorage.getItem('srr_last_emp')||'';
+  document.getElementById('am-note').value = '';
+  setAmType('location');
+  renderAnimalProfile();
+  document.getElementById('animal-modal').classList.add('open');
+}
+function closeAnimalModal(){ document.getElementById('animal-modal').classList.remove('open'); }
+
+function setAmType(t){
+  currentAmType = t;
+  Object.keys(AM_TYPE_META).forEach(function(k){
+    var el = document.getElementById('amtype-'+k);
+    if(el) el.className = 'sev-btn am-type-btn'+(k===t?' sel-ok':'');
+  });
+  var f = document.getElementById('am-fields');
+  var h = '';
+  if(t==='location'){
+    var infoNow = findAnimalCurrentInfo(currentAnimalId);
+    var guess = infoNow ? infoNow.tubId : '';
+    h = '<label class="field-label">TUB / LOCATION</label><input class="field-input" id="am-location-tub" placeholder="e.g. 23A-1" value="'+esc(guess)+'">';
+  } else if(t==='weight'){
+    h = '<label class="field-label">WEIGHT (g)</label><input class="field-input" id="am-weight" type="text" placeholder="e.g. 145g">';
+  } else if(t==='health'){
+    h = '<label class="field-label">STATUS</label>'+
+        '<select class="field-input" id="am-health-status">'+
+          '<option value="sick">🤒 Sick</option>'+
+          '<option value="treated">💊 Treated</option>'+
+          '<option value="recovered">✅ Recovered</option>'+
+          '<option value="injury">🩹 Injury</option>'+
+          '<option value="death">💀 Death</option>'+
+        '</select>';
+  } else if(t==='breeding'){
+    h = '<label class="field-label">PARTNER ID (optional)</label><input class="field-input" id="am-partner" placeholder="e.g. BD014" style="margin-bottom:6px">'+
+        '<label class="field-label">CLUTCH / PAIRING NOTE</label><input class="field-input" id="am-clutch" placeholder="e.g. Pairing #3, Group 2">';
+  } else if(t==='egg'){
+    h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+          '<div><label class="field-label">EGGS LAID</label><input class="field-input" id="am-egg-count" type="number" placeholder="0"></div>'+
+          '<div><label class="field-label">FERTILE</label><input class="field-input" id="am-egg-fertile" type="number" placeholder="0"></div>'+
+        '</div>';
+  }
+  f.innerHTML = h;
+}
+
+function addAnimalEvent(){
+  if(!currentAnimalId) return;
+  var date = document.getElementById('am-date').value || todayStr();
+  var emp  = document.getElementById('am-employee').value.trim();
+  if(emp) localStorage.setItem('srr_last_emp', emp);
+  var note = document.getElementById('am-note').value.trim();
+  var info = findAnimalCurrentInfo(currentAnimalId);
+
+  var ev = {
+    id: 'ev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    type: currentAmType,
+    date: date,
+    employee: emp,
+    note: note,
+    tub: info ? info.tubId : '',
+    ts: nowStr()
+  };
+  if(currentAmType==='weight'){
+    ev.weight = (document.getElementById('am-weight').value||'').trim();
+    if(!ev.weight){ showToast('⚠️ Enter a weight'); return; }
+  } else if(currentAmType==='health'){
+    ev.status = document.getElementById('am-health-status').value;
+  } else if(currentAmType==='breeding'){
+    ev.partnerId = (document.getElementById('am-partner').value||'').trim();
+    ev.clutch = (document.getElementById('am-clutch').value||'').trim();
+  } else if(currentAmType==='egg'){
+    ev.eggCount = document.getElementById('am-egg-count').value||'0';
+    ev.fertileCount = document.getElementById('am-egg-fertile').value||'0';
+  } else if(currentAmType==='location'){
+    var newTub = (document.getElementById('am-location-tub').value||'').trim();
+    if(!newTub){ showToast('⚠️ Enter a tub/location'); return; }
+    ev.fromTub = ev.tub || '';
+    ev.tub = newTub;
+  }
+
+  if(!DATA.animalEvents) DATA.animalEvents = {};
+  if(!DATA.animalEvents[currentAnimalId]) DATA.animalEvents[currentAnimalId] = [];
+  DATA.animalEvents[currentAnimalId].push(ev);
+  saveData();
+  renderAnimalProfile();
+  pushAnimalEvent(currentAnimalId, ev);
+  document.getElementById('am-note').value = '';
+  showToast('💾 Event saved for '+currentAnimalId);
+}
+
+function deleteAnimalEventById(evId){
+  if(!currentAnimalId || !DATA.animalEvents || !DATA.animalEvents[currentAnimalId]) return;
+  if(!confirm('Delete this event? မှတ်တမ်းကို ဖျက်မလား?')) return;
+  DATA.animalEvents[currentAnimalId] = DATA.animalEvents[currentAnimalId].filter(function(e){ return e.id!==evId; });
+  saveData();
+  renderAnimalProfile();
+}
+
+function buildSparkline(weightEvents){
+  var pts = weightEvents.map(function(e){
+    var n = parseFloat(String(e.weight).replace(/[^\d.]/g,''));
+    return isNaN(n)?null:n;
+  }).filter(function(n){ return n!==null; });
+  if(pts.length<2) return '';
+  var w=460, h=70, pad=8;
+  var min=Math.min.apply(null,pts), max=Math.max.apply(null,pts);
+  if(min===max){ min-=1; max+=1; }
+  var step = (w-2*pad)/(pts.length-1);
+  var coords = pts.map(function(v,i){
+    var x = pad + i*step;
+    var y = h-pad - ((v-min)/(max-min))*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var svg = '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:70px;display:block" preserveAspectRatio="none">';
+  svg += '<polyline points="'+coords.join(' ')+'" fill="none" stroke="#1877f2" stroke-width="2"/>';
+  coords.forEach(function(c){
+    var xy=c.split(',');
+    svg += '<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="3" fill="#1877f2"/>';
+  });
+  svg += '</svg>';
+  svg += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fb-muted);margin-top:2px"><span>'+min.toFixed(0)+'g</span><span>'+max.toFixed(0)+'g</span></div>';
+  return svg;
+}
+
+function renderAnimalProfile(){
+  var id = currentAnimalId;
+  document.getElementById('am-title').textContent = '🐉 '+id;
+  var info = findAnimalCurrentInfo(id);
+  var events = getAnimalEvents(id).slice().sort(function(a,b){ return (a.ts||a.date||'').localeCompare(b.ts||b.date||''); });
+
+  var cardHtml = '';
+  if(info){
+    cardHtml += '<div><b>Current tub:</b> '+esc(info.tubId)+' &nbsp; <b>Sex:</b> '+(info.sex==='m'?'♂ Male':'♀ Female')+'</div>';
+    cardHtml += '<div><b>Morph:</b> '+esc(info.color)+' &nbsp; <b>Group:</b> '+(info.group?'G'+esc(info.group):'—')+'</div>';
+    if(info.weight) cardHtml += '<div><b>Logged weight:</b> '+esc(info.weight)+'</div>';
+  } else {
+    cardHtml = '<div style="color:var(--fb-muted)">Not currently assigned to a tub in this system — history only.</div>';
+  }
+  document.getElementById('am-current-card').innerHTML = cardHtml;
+
+  var weightEvents = events.filter(function(e){ return e.type==='weight' && e.weight; });
+  var sfield = document.getElementById('am-sparkline-field');
+  if(weightEvents.length>=2){
+    sfield.style.display='';
+    document.getElementById('am-sparkline').innerHTML = buildSparkline(weightEvents);
+  } else {
+    sfield.style.display='none';
+  }
+
+  var tl = events.slice().reverse();
+  if(!tl.length){
+    document.getElementById('am-timeline').innerHTML = '<div style="color:var(--fb-muted);font-size:12px">No history yet — မှတ်တမ်းမရှိသေးပါ</div>';
+  } else {
+    var html='';
+    tl.forEach(function(e){
+      var meta = AM_TYPE_META[e.type] || AM_TYPE_META.note;
+      html += '<div class="ae-entry" style="border-left-color:'+meta.color+'">';
+      html += '<div class="ae-top"><span class="ae-type" style="color:'+meta.color+'">'+meta.icon+' '+meta.label+'</span>';
+      html += '<span class="ae-date">'+esc(e.date)+(e.employee?' · '+esc(e.employee):'')+'</span></div>';
+      var detail = '';
+      if(e.type==='location') detail = e.fromTub ? ('Moved: '+esc(e.fromTub)+' → '+esc(e.tub)) : ('First logged at: '+esc(e.tub));
+      if(e.type==='weight') detail = 'Weight: '+esc(e.weight);
+      if(e.type==='health') detail = 'Status: '+esc((e.status||'').toUpperCase());
+      if(e.type==='breeding') detail = (e.partnerId?'Partner: '+esc(e.partnerId)+' · ':'')+(e.clutch?esc(e.clutch):'');
+      if(e.type==='egg') detail = 'Eggs: '+esc(e.eggCount||'0')+' · Fertile: '+esc(e.fertileCount||'0');
+      if(detail) html += '<div>'+detail+'</div>';
+      if(e.note) html += '<div style="color:var(--fb-muted);margin-top:2px">'+esc(e.note)+'</div>';
+      if(e.tub && e.type!=='location') html += '<div style="font-size:10px;color:var(--fb-muted);margin-top:2px">Tub at the time: '+esc(e.tub)+'</div>';
+      html += '<button class="ae-del" onclick="deleteAnimalEventById(\''+e.id+'\')">Delete</button>';
+      html += '</div>';
+    });
+    document.getElementById('am-timeline').innerHTML = html;
+  }
+}
+
+function renderAnimalsList(){
+  var ids = Object.keys(DATA.animalEvents||{}).filter(function(id){ return (DATA.animalEvents[id]||[]).length>0; });
+  ids.sort(function(a,b){
+    var la = (DATA.animalEvents[a]||[]).slice(-1)[0];
+    var lb = (DATA.animalEvents[b]||[]).slice(-1)[0];
+    return ((lb&&lb.ts)||'').localeCompare((la&&la.ts)||'');
+  });
+  if(!ids.length){
+    document.getElementById('animals-list').innerHTML = '<div class="empty-state"><div class="es-icon">🐉</div><div class="es-text">No animal history logged yet.</div><div class="es-my">မှတ်တမ်းမရှိသေးပါ</div></div>';
+    return;
+  }
+  var html='';
+  ids.forEach(function(id){
+    var events = DATA.animalEvents[id]||[];
+    var last = events[events.length-1];
+    var info = findAnimalCurrentInfo(id);
+    var idJs = id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += '<div class="log-card" onclick="openAnimalModal(\''+idJs+'\')" style="cursor:pointer">';
+    html += '<div class="log-card-header"><div><span style="font-weight:700">🐉 '+esc(id)+'</span>'+(info?' <span style="font-size:11px;color:var(--fb-muted);margin-left:6px">'+esc(info.tubId)+'</span>':'')+'</div>';
+    html += '<span style="font-size:10px;color:var(--fb-muted)">'+events.length+' event'+(events.length===1?'':'s')+'</span></div>';
+    html += '<div class="log-body"><div style="font-size:11px;color:var(--fb-muted)">Last: '+esc(last.date)+' — '+(AM_TYPE_META[last.type]?AM_TYPE_META[last.type].label:last.type)+'</div></div>';
+    html += '</div>';
+  });
+  document.getElementById('animals-list').innerHTML = html;
+}
+
+// Merge remote animalEvents object { ANIMALID: [event,...] } into local DATA, deduped by event id
+function mergeAnimalEvents(remoteEvents){
+  if(!remoteEvents) return false;
+  if(!DATA.animalEvents) DATA.animalEvents = {};
+  var changed=false;
+  Object.keys(remoteEvents).forEach(function(aid){
+    var remoteArr = remoteEvents[aid];
+    if(!Array.isArray(remoteArr)) return;
+    var localArr = DATA.animalEvents[aid]||[];
+    var existingIds = {};
+    localArr.forEach(function(e){ if(e&&e.id) existingIds[e.id]=1; });
+    remoteArr.forEach(function(e){
+      if(e && e.id && !existingIds[e.id]){ localArr.push(e); changed=true; }
+    });
+    localArr.sort(function(a,b){ return (a.ts||a.date||'').localeCompare(b.ts||b.date||''); });
+    DATA.animalEvents[aid]=localArr;
+  });
+  return changed;
+}
+
+function pushAnimalEvent(animalId, ev){
+  if(!SHEET_URL) return;
+  var payload = { action:'save_animal_event', animalId:animalId, event:ev };
+  var url = SHEET_URL+'?action=save_animal_event&payload='+encodeURIComponent(JSON.stringify(payload));
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(d && d.lastModified) lastMod = d.lastModified; })
+    .catch(function(){
+      fetch(SHEET_URL, {method:'POST', body:JSON.stringify(payload)})
+        .then(function(r){return r.json();})
+        .then(function(d){ if(d && d.lastModified) lastMod=d.lastModified; })
+        .catch(function(){ showToast('⚠️ Event saved locally only — will sync when online'); });
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE SHEETS LIVE SYNC
+// ═══════════════════════════════════════════════════════════════
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxVRP2fsYVl-FnkvRtX4m-qvckVv0KKWW6MRpWpF3C6XPQDKD1BClt6sI0j1p6N_S6IWQ/exec';
+var POLL_MS   = 20000;
+var pollTimer = null;
+var lastMod   = '';
+var syncQueue = [];
+var isSyncing = false;
+
+function setSyncPill(label, bg, color) {
+  var el = document.getElementById('sync-pill');
+  if (!el) return;
+  el.textContent = label;
+  el.style.background = bg;
+  el.style.color = color;
+  el.style.border = '1px solid ' + color + '44';
+}
+
+function pillState(state) {
+  if (state === 'ok')      setSyncPill('⬤ Synced', '#e6f4ea', '#1a5c0c');
+  if (state === 'saving')  setSyncPill('⬤ Saving…', '#dbeafe', '#1e40af');
+  if (state === 'offline') setSyncPill('⬤ Offline', '#f3f4f6', '#6b7280');
+  if (state === 'error')   setSyncPill('⬤ Error', '#fdeaea', '#7c0000');
+  if (state === 'ready')   setSyncPill('⬤ Ready', '#e6f4ea', '#1a5c0c');
+}
+
+function pushToSheet(tubId, severity, issues, notes, employee, date) {
+  if (!SHEET_URL) { showToast('⚠️ No Sheet URL configured'); return; }
+  pillState('saving');
+  var summary = getTubSummary(tubId);
+  var inv     = getInvData(tubId);
+  // Use GET with encoded payload so Apps Script can read it
+  var payload = {
+    action: 'save_tub',
+    tubId: tubId, date: date,
+    severity: severity, issues: issues, notes: notes, employee: employee,
+    males: summary.males, females: summary.females, totalAnimals: summary.total,
+    inventory: invSummaryForSheet(tubId), inventoryObj: inv,
+    ts: nowStr()
+  };
+  var url = SHEET_URL+'?action=save_tub&payload='+encodeURIComponent(JSON.stringify(payload));
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      lastMod = d.lastModified || lastMod;
+      pillState('ok');
+      var ls = document.getElementById('last-sync');
+      if(ls) ls.textContent = 'Saved: '+nowStr().slice(11,16);
+      showToast('✅ Tub ' + tubId + ' saved to Sheet permanently!');
+    })
+    .catch(function(){
+      // Fallback POST
+      fetch(SHEET_URL, {method:'POST', body:JSON.stringify(payload)})
+        .then(function(r){return r.json();})
+        .then(function(d){ lastMod=d.lastModified||lastMod; pillState('ok'); showToast('✅ Tub '+tubId+' saved!'); })
+        .catch(function(){ pillState('offline'); showToast('⚠️ Offline — saved locally only'); });
+    });
+}
+
+// Bulk push — all today's checked tubs at once
+function syncAllToday() {
+  if (!SHEET_URL) { showToast('⚠️ No Sheet URL configured'); return; }
+  var entries = [];
+  ALL_TUBS.forEach(function(id) {
+    var t = DATA.tubs[id];
+    if (t && t.lastDate === todayStr()) {
+      entries.push({
+        tubId: id, date: t.lastDate,
+        severity: t.severity || 'ok',
+        issues: t.issues || [],
+        notes: t.notes || '',
+        employee: t.employee || '',
+        males: getTubSummary(id).males,
+        females: getTubSummary(id).females,
+        totalAnimals: getTubSummary(id).total,
+        inventory: invSummaryForSheet(id),
+        inventoryObj: t.inventory || {}
+      });
+    }
+  });
+  if (!entries.length) {
+    showToast('ℹ️ No tubs checked today to sync');
+    return;
+  }
+  pillState('saving');
+  showToast('☁️ Syncing ' + entries.length + ' tubs…');
+  fetch(SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'bulk', entries: entries }) })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    pillState('ok');
+    var ls = document.getElementById('last-sync');
+    if(ls) ls.textContent = 'Synced: '+nowStr().slice(11,16);
+    showToast('✅ Synced ' + entries.length + ' tubs to Sheet!');
+  })
+  .catch(function() { pillState('offline'); showToast('⚠️ Offline — data saved locally'); });
+}
+
+// ── PERSISTENT LIVE LOAD ─────────────────────────────────────
+function hideLoading(){
+  var el=document.getElementById('loading-overlay');
+  if(el) el.style.display='none';
+}
+
+function loadFromSheet(manual){
+  if(!SHEET_URL){ pillState('offline'); hideLoading(); renderGrid(); return; }
+  if(manual) showToast('↻ Refreshing from Sheet…');
+  fetch(SHEET_URL+'?action=get_state&t='+Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.status==='ok' && d.tubs && Object.keys(d.tubs).length){
+        // Full merge — remote data always wins (it's the persistent master)
+        Object.keys(d.tubs).forEach(function(id){
+          var rt = d.tubs[id];
+          if(!rt) return;
+          // Keep local inventory if remote has none (just logged, not synced inv yet)
+          var localInv = DATA.tubs[id] && DATA.tubs[id].inventory;
+          DATA.tubs[id] = rt;
+          if(!rt.inventory && localInv) DATA.tubs[id].inventory = localInv;
+        });
+        // Merge log
+        if(d.log && d.log.length){
+          var existingKeys = {};
+          (DATA.log||[]).forEach(function(e){ existingKeys[e.tub+'|'+e.date]=1; });
+          d.log.forEach(function(e){
+            if(!existingKeys[e.tub+'|'+e.date]) DATA.log.push(e);
+          });
+        }
+        // Merge individual animal history
+        if(d.animalEvents) mergeAnimalEvents(d.animalEvents);
+        lastMod = d.lastModified || '';
+        saveData();
+        renderGrid();
+        pillState('ok');
+        var ls = document.getElementById('last-sync');
+        if(ls && d.lastModified) ls.textContent = 'Updated: '+String(d.lastModified).slice(11,16);
+        if(manual) showToast('✅ Data loaded from Sheet');
+      } else {
+        // No data on Sheet yet — push local data up so it's saved
+        if(Object.keys(DATA.tubs).length > 0) syncDataToSheet();
+        pillState('ok');
+        renderGrid();
+      }
+      hideLoading();
+    })
+    .catch(function(){
+      pillState('offline');
+      hideLoading();
+      renderGrid();
+      if(manual) showToast('⚠️ Offline — showing local data');
+    });
+}
+
+// Push ALL local tub+inventory data to Sheet (full backup)
+function syncDataToSheet(){
+  if(!SHEET_URL) return;
+  pillState('saving');
+  fetch(SHEET_URL, {method:'POST', body:JSON.stringify({action:'sync_data', tubs:DATA.tubs})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ lastMod=d.lastModified||lastMod; pillState('ok'); })
+    .catch(function(){ pillState('offline'); });
+}
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(function(){
+    if(!SHEET_URL) return;
+    fetch(SHEET_URL+'?action=get_state&t='+Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.status==='ok' && d.lastModified && d.lastModified !== lastMod){
+          var remote = d.tubs || {};
+          var changed = false;
+          Object.keys(remote).forEach(function(id){
+            var rt = remote[id]; if(!rt) return;
+            var lt = DATA.tubs[id];
+            // Accept any remote change
+            if(!lt || JSON.stringify(rt) !== JSON.stringify(lt)){
+              var localInv = lt && lt.inventory;
+              DATA.tubs[id] = rt;
+              if(!rt.inventory && localInv) DATA.tubs[id].inventory = localInv;
+              changed = true;
+            }
+          });
+          if(d.animalEvents && mergeAnimalEvents(d.animalEvents)) changed = true;
+          lastMod = d.lastModified;
+          if(changed){
+            saveData(); renderGrid();
+            var ls = document.getElementById('last-sync');
+            if(ls) ls.textContent = 'Updated: '+String(d.lastModified).slice(11,16);
+            showToast('🔄 Updated by a colleague · အပ်ဒိတ်လာပြီ', 3000);
+          }
+          pillState('ok');
+        } else { pillState('ok'); }
+      })
+      .catch(function(){ pillState('offline'); });
+  }, POLL_MS);
+}
+
+// Init: render local data immediately, then load from Sheet
+renderGrid();
+hideLoading();
+setTimeout(function(){
+  if(SHEET_URL){
+    loadFromSheet(false);
+    startPolling();
+  } else {
+    pillState('offline');
+  }
+}, 200);
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMAL INVENTORY — with individual ID + weight per animal
+// ═══════════════════════════════════════════════════════════════
+var COLOR_GROUPS = [
+  { id:'het',     label:'HET', colors:[
+    'HET ALBINO','HET DARK RED','HET ZERO','HET TRANS','HET WITBLIT','HET THUNDERBOLT'
+  ]},
+  { id:'poss',    label:'POSS HET', colors:[
+    'POSS HET ZERO ALBINO','POSS HET WITBLIT ALBINO','POSS HET ALBINO'
+  ]},
+  { id:'base',    label:'Base Morphs', colors:[
+    'FANCY','RED','BLUE BAR','LEATHERBACK','DUNNER','GENETIC STRIPE',
+    'TRANS','YELLOW','SNOW','SN (PASTEL)'
+  ]},
+  { id:'pure',    label:'Pure Morphs', colors:[
+    'ALBINO','DARK RED','ZERO','WITBLIT','THUNDERBOLT','MARBLE','UC'
+  ]},
+  { id:'special', label:'Special', colors:[
+    'GHOST YELLOW (G/Y)','GHOST ORANGE (G/O)','SUPER BLUE (SB)',
+    'PHANTOM RED (PR)','CLOWN (CL)','FLAME (FL)','MAGMA (M)',
+    'CORAL (C)','PARADOX (PARA)','HET PARADOX (HP)'
+  ]}
+];
+
+var ALL_COLORS = [];
+COLOR_GROUPS.forEach(function(g){ ALL_COLORS = ALL_COLORS.concat(g.colors); });
+
+var currentInvGroup = 'het';
+var continuousScanMode = false;
+var scanArmedEl = null; // currently focused/armed ID input element, waiting for a scan
+
+function getInvData(tubId){
+  var t = DATA.tubs[tubId];
+  return (t && t.inventory) ? t.inventory : {};
+}
+
+// inv structure:
+// { "COLOR::m": [ {id:"BD001", weight:"120g"}, ... ],
+//   "COLOR::f": [ {id:"BD002", weight:"95g"},  ... ] }
+
+function buildMorphKey(color, sex){ return color + '::' + sex; }
+
+function getTubSummary(tubId){
+  var inv = getInvData(tubId);
+  var m=0, f=0;
+  Object.keys(inv).forEach(function(k){
+    var arr = inv[k];
+    if(!Array.isArray(arr)) return;
+    if(k.slice(-3)==='::m') m += arr.length;
+    if(k.slice(-3)==='::f') f += arr.length;
+  });
+  return { males:m, females:f, total:m+f };
+}
+
+function invSummaryForSheet(tubId){
+  var inv = getInvData(tubId);
+  var lines = [];
+  ALL_COLORS.forEach(function(color){
+    var mArr = inv[buildMorphKey(color,'m')] || [];
+    var fArr = inv[buildMorphKey(color,'f')] || [];
+    if(!mArr.length && !fArr.length) return;
+    var detail = color + ': ' + mArr.length + 'M ' + fArr.length + 'F';
+    var ids = mArr.concat(fArr).map(function(a){ return a.animalId||''; }).filter(Boolean);
+    if(ids.length) detail += ' [' + ids.join(',') + ']';
+    lines.push(detail);
+  });
+  return lines.join(' | ');
+}
+
+function updateInvTotals(){
+  var s = getTubSummary(currentTubId);
+  var em=document.getElementById('inv-tot-m');
+  var ef=document.getElementById('inv-tot-f');
+  var et=document.getElementById('inv-tot-t');
+  if(em) em.textContent=s.males;
+  if(ef) ef.textContent=s.females;
+  if(et) et.textContent=s.total;
+}
+
+function ensureInvKey(tubId, key){
+  if(!DATA.tubs[tubId]) DATA.tubs[tubId]={lastDate:todayStr()};
+  if(!DATA.tubs[tubId].inventory) DATA.tubs[tubId].inventory={};
+  if(!Array.isArray(DATA.tubs[tubId].inventory[key])) DATA.tubs[tubId].inventory[key]=[];
+  return DATA.tubs[tubId].inventory[key];
+}
+
+// ── QR / BARCODE SCANNING ────────────────────────────────────────────
+// Works with Android PDA barcode scanners (Bluetooth/USB HID "keyboard
+// wedge" mode): the device just types the scanned code into whichever
+// input is focused, then sends an Enter keystroke automatically.
+
+function toggleScanMode(on){
+  continuousScanMode = !!on;
+  showToast(continuousScanMode ? '📷 Continuous scan mode ON — keep scanning' : 'Continuous scan mode off');
+}
+
+// Tapping the 📷 button next to a field arms it: focuses + selects the
+// text so the next scan overwrites it cleanly.
+function armScanField(btn){
+  var input = btn.parentElement.querySelector('.ar-id-input');
+  if(!input) return;
+  input.focus();
+  input.select();
+}
+
+function onIdFieldFocus(input){
+  scanArmedEl = input;
+  input.classList.remove('scan-confirmed','scan-dupe');
+  input.classList.add('scan-armed');
+  var btn = input.parentElement.querySelector('.ar-scan-btn');
+  if(btn) btn.classList.add('active');
+}
+
+function onIdFieldBlur(input){
+  input.classList.remove('scan-armed');
+  var btn = input.parentElement.querySelector('.ar-scan-btn');
+  if(btn) btn.classList.remove('active');
+  if(scanArmedEl===input) scanArmedEl=null;
+  var val = input.value.trim();
+  if(val) maybeLogLocationEvent(val, currentTubId);
+}
+
+// Look for the same animal ID already recorded elsewhere (any tub/color/sex)
+function findDuplicateAnimalId(id, color, sex, idx){
+  if(!id) return null;
+  for(var tubId in DATA.tubs){
+    var inv = (DATA.tubs[tubId]&&DATA.tubs[tubId].inventory)||{};
+    for(var key in inv){
+      var arr = inv[key];
+      if(!Array.isArray(arr)) continue;
+      for(var j=0;j<arr.length;j++){
+        var isSame = (tubId===currentTubId && key===buildMorphKey(color,sex) && j===idx);
+        if(!isSame && arr[j] && (arr[j].animalId||'').trim().toLowerCase()===id.trim().toLowerCase()){
+          var parts = key.split('::');
+          return { tubId:tubId, color:parts[0], sex:parts[1] };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// PDA scanners send the code followed by an Enter keystroke — this is
+// what confirms a scan (typing manually + pressing Enter works the same way).
+function handleIdScanKeydown(evt, input, color, sex, idx){
+  if(evt.key!=='Enter') return;
+  evt.preventDefault();
+  var val = input.value.trim();
+  if(!val){ return; }
+
+  input.classList.remove('scan-dupe');
+  var dupe = findDuplicateAnimalId(val, color, sex, idx);
+  if(dupe){
+    input.classList.add('scan-dupe');
+    showToast('⚠️ ID "'+val+'" already used in tub '+dupe.tubId+' — check for duplicate scan');
+  } else {
+    input.classList.remove('scan-confirmed');
+    void input.offsetWidth; // restart animation
+    input.classList.add('scan-confirmed');
+    showToast('✅ Scanned: '+val);
+  }
+
+  if(continuousScanMode){
+    // Add the next empty slot of the same color/sex and hand the scanner
+    // straight to it so staff can keep scanning without touching the screen.
+    addAnimal(color, sex);
+  } else {
+    // Move on to the weight field for this animal
+    var row = input.closest('.animal-row');
+    var weightInput = row ? row.querySelectorAll('.ar-input')[2] : null; // group select, id input, weight input
+    if(weightInput) weightInput.focus(); else input.blur();
+  }
+}
+
+// Add individual animal
+function addAnimal(color, sex){
+  var key = buildMorphKey(color, sex);
+  var arr = ensureInvKey(currentTubId, key);
+  arr.push({ animalId:'', weight:'' });
+  saveData();
+  renderInventoryModal(currentTubId);
+  updateInvTotals();
+  // scroll to and focus new ID field
+  setTimeout(function(){
+    var rows = document.querySelectorAll('.animal-row[data-color="'+color.replace(/"/g,'&quot;')+'"][data-sex="'+sex+'"]');
+    if(rows.length){
+      var last = rows[rows.length-1];
+      last.scrollIntoView({block:'nearest'});
+      var inp = last.querySelector('.ar-id-input');
+      if(inp) inp.focus();
+    }
+  }, 50);
+}
+
+// Remove individual animal
+function removeAnimal(color, sex, idx){
+  var key = buildMorphKey(color, sex);
+  if(!DATA.tubs[currentTubId]||!DATA.tubs[currentTubId].inventory) return;
+  var arr = DATA.tubs[currentTubId].inventory[key]||[];
+  arr.splice(idx, 1);
+  if(!arr.length) delete DATA.tubs[currentTubId].inventory[key];
+  saveData();
+  renderInventoryModal(currentTubId);
+  updateInvTotals();
+}
+
+// Update individual animal field
+function updateAnimalField(color, sex, idx, field, value){
+  var key = buildMorphKey(color, sex);
+  var arr = ensureInvKey(currentTubId, key);
+  if(!arr[idx]) arr[idx]={};
+  arr[idx][field] = value;
+  saveData();
+}
+
+function switchInvGroup(gId){
+  currentInvGroup = gId;
+  document.querySelectorAll('.inv-tab').forEach(function(el){
+    el.classList.toggle('active', el.getAttribute('data-gid')===gId);
+  });
+  document.querySelectorAll('.morph-group').forEach(function(el){
+    el.classList.toggle('active', el.getAttribute('data-gid')===gId);
+  });
+}
+
+function renderInventoryModal(tubId){
+  var inv = getInvData(tubId);
+
+  // Tabs
+  var scanBarHtml =
+    '<div class="scan-toggle-bar">'+
+      '<span style="font-size:16px">📷</span>'+
+      '<span class="stb-label">Continuous Scan Mode<span class="stb-my">QR ကုဒ်ဖြင့် တစ်ကောင်ပြီးတစ်ကောင် စကင်ဖတ်ရန်</span></span>'+
+      '<label class="scan-switch">'+
+        '<input type="checkbox" id="scan-mode-toggle" '+(continuousScanMode?'checked':'')+' onchange="toggleScanMode(this.checked)">'+
+        '<span class="scan-switch-slider"></span>'+
+      '</label>'+
+    '</div>';
+
+  var tabsHtml = '<div class="inv-tabs">';
+  COLOR_GROUPS.forEach(function(g){
+    tabsHtml += '<button class="inv-tab'+(g.id===currentInvGroup?' active':'')+
+      '" data-gid="'+g.id+'" onclick="switchInvGroup(this.getAttribute(\'data-gid\'))">'+
+      g.label+'</button>';
+  });
+  tabsHtml += '</div>';
+
+  // Groups
+  var groupsHtml = '';
+  COLOR_GROUPS.forEach(function(g){
+    groupsHtml += '<div class="morph-group'+(g.id===currentInvGroup?' active':'')+'" data-gid="'+g.id+'">';
+    groupsHtml += '<div class="inv-section-title">'+g.label+'</div>';
+
+    g.colors.forEach(function(color){
+      var safe = color.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      var mArr = Array.isArray(inv[buildMorphKey(color,'m')]) ? inv[buildMorphKey(color,'m')] : [];
+      var fArr = Array.isArray(inv[buildMorphKey(color,'f')]) ? inv[buildMorphKey(color,'f')] : [];
+      var tot  = mArr.length + fArr.length;
+
+      groupsHtml += '<div class="morph-row morph-expand" style="flex-direction:column;align-items:flex-start;cursor:default">';
+
+      // Header row
+      groupsHtml +=
+        '<div style="display:flex;align-items:center;width:100%;gap:6px">'+
+          '<span class="morph-name" style="flex:1">'+color+'</span>'+
+          '<span class="morph-m" style="font-size:11px">♂ '+mArr.length+'</span>'+
+          '<button class="add-animal-btn" style="padding:2px 8px;font-size:10px" onclick="addAnimal(\''+safe+'\',\'m\')">+ ♂</button>'+
+          '<span class="morph-f" style="font-size:11px;margin-left:4px">♀ '+fArr.length+'</span>'+
+          '<button class="add-animal-btn" style="padding:2px 8px;font-size:10px;border-color:#d63384;color:#d63384" onclick="addAnimal(\''+safe+'\',\'f\')">+ ♀</button>'+
+          '<span class="morph-total" style="min-width:24px;text-align:right">'+(tot>0?tot:'')+'</span>'+
+        '</div>';
+
+      // Individual animal rows
+      if(tot > 0){
+        groupsHtml += '<div class="animal-rows visible" style="width:100%;margin-top:5px">';
+
+        ['m','f'].forEach(function(sex){
+          var arr = sex==='m' ? mArr : fArr;
+          arr.forEach(function(animal, i){
+            var sexLabel = sex==='m' ? '♂ Male':'♀ Female';
+            var sexClass = sex==='m' ? 'm':'f';
+            var idRaw    = animal.animalId||'';
+            var idVal    = idRaw.replace(/"/g,'&quot;');
+            var idValJs  = idRaw.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            var wVal     = (animal.weight||'').replace(/"/g,'&quot;');
+            var grpVal   = animal.group||'';
+            // Group select options
+            var grpOpts  = '<option value="">Grp</option>';
+            for(var g=1;g<=7;g++) grpOpts+='<option value="'+g+'"'+(grpVal==g?' selected':'')+'>G'+g+'</option>';
+            groupsHtml +=
+              '<div class="animal-row" data-color="'+color.replace(/"/g,'&quot;')+'" data-sex="'+sex+'">'+
+                '<span class="ar-badge '+sexClass+'">'+sexLabel+'</span>'+
+                '<span class="ar-label">Grp:</span>'+
+                '<select class="ar-input" style="width:52px;padding:4px 2px;text-align:center" oninput="updateAnimalField(\''+safe+'\',\''+sex+'\','+i+',\'group\',this.value)">'+grpOpts+'</select>'+
+                '<span class="ar-label">ID:</span>'+
+                '<button type="button" class="ar-scan-btn" title="Scan QR into this field" onclick="armScanField(this)">📷</button>'+
+                '<input class="ar-input ar-id-input" type="text" placeholder="BD001 or scan QR" value="'+idVal+'"'+
+                  ' data-color="'+safe+'" data-sex="'+sex+'" data-idx="'+i+'"'+
+                  ' oninput="updateAnimalField(\''+safe+'\',\''+sex+'\','+i+',\'animalId\',this.value)"'+
+                  ' onfocus="onIdFieldFocus(this)" onblur="onIdFieldBlur(this)"'+
+                  ' onkeydown="handleIdScanKeydown(event,this,\''+safe+'\',\''+sex+'\','+i+')">'+
+                '<span class="ar-label">g:</span>'+
+                '<input class="ar-input" type="text" placeholder="120g" value="'+wVal+'" style="width:52px"'+
+                  ' oninput="updateAnimalField(\''+safe+'\',\''+sex+'\','+i+',\'weight\',this.value)">'+
+                (idRaw.trim()
+                  ? '<button type="button" class="ar-scan-btn" title="View history / History ကြည့်ရန်" onclick="openAnimalModal(\''+idValJs+'\')">📖</button>'
+                  : '<button type="button" class="ar-scan-btn" style="opacity:.3;cursor:not-allowed" disabled title="Enter ID first">📖</button>')+
+                '<button class="ar-del" onclick="removeAnimal(\''+safe+'\',\''+sex+'\','+i+')" title="Remove">✕</button>'+
+              '</div>';
+          });
+        });
+
+        groupsHtml += '</div>';
+      }
+
+      groupsHtml += '</div>'; // morph-row
+    });
+    groupsHtml += '</div>'; // morph-group
+  });
+
+  // Totals bar
+  var s = getTubSummary(tubId);
+  var totalsHtml =
+    '<div class="inv-totals">'+
+      '<div class="inv-total-item">'+
+        '<div class="inv-total-val" style="color:#1877f2" id="inv-tot-m">'+s.males+'</div>'+
+        '<div class="inv-total-label">♂ Males</div>'+
+      '</div>'+
+      '<div class="inv-total-item">'+
+        '<div class="inv-total-val" style="color:#d63384" id="inv-tot-f">'+s.females+'</div>'+
+        '<div class="inv-total-label">♀ Females</div>'+
+      '</div>'+
+      '<div class="inv-total-item">'+
+        '<div class="inv-total-val" style="color:#42b72a" id="inv-tot-t">'+s.total+'</div>'+
+        '<div class="inv-total-label">Total</div>'+
+      '</div>'+
+    '</div>';
+
+  var container = document.getElementById('inv-container');
+  if(container) container.innerHTML = scanBarHtml + tabsHtml + groupsHtml + totalsHtml;
+
+  // Auto-seed/refresh location history for every animal currently in this tub
+  seedLocationEventsForTub(tubId);
+}
+
+
+</script>
+</body>
+</html>
